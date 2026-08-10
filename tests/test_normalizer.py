@@ -1,16 +1,16 @@
 """normalizer.py のロジックテスト"""
-import json
+
 import hashlib
-from datetime import datetime, timezone
+import json
 
 from normalizer import (
+    NOTIFY_MAX_ITEMS,
+    build_category_block,
     compute_hash,
+    get_mitre_external_id,
     normalize_tactic,
     normalize_technique,
-    get_mitre_external_id,
     parse_dt,
-    build_category_block,
-    NOTIFY_MAX_ITEMS,
 )
 
 
@@ -43,9 +43,7 @@ class TestComputeHash:
         data = {"name": "初期アクセス", "description": "テスト"}
         result = compute_hash(data)
         # 手動計算と一致するか確認
-        expected = hashlib.sha256(
-            json.dumps(data, sort_keys=True, ensure_ascii=False).encode("utf-8")
-        ).hexdigest()
+        expected = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
         assert result == expected
 
 
@@ -56,11 +54,7 @@ class TestGetMitreExternalId:
         assert get_mitre_external_id(sample_tactic_stix) == "TA0001"
 
     def test_returns_none_when_no_mitre_source(self):
-        obj = {
-            "external_references": [
-                {"source_name": "other-source", "external_id": "X999"}
-            ]
-        }
+        obj = {"external_references": [{"source_name": "other-source", "external_id": "X999"}]}
         assert get_mitre_external_id(obj) is None
 
     def test_returns_none_when_no_references(self):
@@ -192,18 +186,12 @@ class TestBuildCategoryBlock:
         assert "Test Technique" in result
 
     def test_max_items_not_exceeded(self):
-        events = [
-            {"external_id": f"T{i}", "name": f"Technique {i}"}
-            for i in range(NOTIFY_MAX_ITEMS)
-        ]
+        events = [{"external_id": f"T{i}", "name": f"Technique {i}"} for i in range(NOTIFY_MAX_ITEMS)]
         result = build_category_block(":new: 新規追加", events)
         assert "上記も含め" not in result
 
     def test_max_items_exceeded(self):
-        events = [
-            {"external_id": f"T{i}", "name": f"Technique {i}"}
-            for i in range(NOTIFY_MAX_ITEMS + 3)
-        ]
+        events = [{"external_id": f"T{i}", "name": f"Technique {i}"} for i in range(NOTIFY_MAX_ITEMS + 3)]
         result = build_category_block(":new: 新規追加", events)
         assert f"{NOTIFY_MAX_ITEMS + 3}件の変更を検知しました" in result
         # 最初の NOTIFY_MAX_ITEMS 件は個別列挙される

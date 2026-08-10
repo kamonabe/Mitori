@@ -1,11 +1,12 @@
 """cve_watch.py のロジックテスト"""
+
 from unittest.mock import patch
 
 from cve_watch import (
+    extract_cve_id,
+    extract_fixed_version,
     normalize_version,
     parse_cvss_severity,
-    extract_fixed_version,
-    extract_cve_id,
     send_slack_notification,
 )
 
@@ -49,9 +50,7 @@ class TestParseCvssSeverity:
     """CVSS severity パーステスト"""
 
     def test_cvss_v3_vector(self):
-        severity_list = [
-            {"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}
-        ]
+        severity_list = [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}]
         severity, score, vector = parse_cvss_severity(severity_list)
         assert vector == "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
         assert severity == "UNKNOWN"  # severity_list だけでは severity 文字列は取れない
@@ -216,7 +215,17 @@ class TestSendSlackNotification:
     @patch("cve_watch.SLACK_WEBHOOK_URL", "")
     @patch("cve_watch.requests.post")
     def test_skip_when_no_webhook(self, mock_post):
-        notifications = [{"type": "new_cve", "osv_id": "X", "cve_id": "Y", "component": "Z", "severity": "LOW", "summary": "test", "fixed_version": None}]
+        notifications = [
+            {
+                "type": "new_cve",
+                "osv_id": "X",
+                "cve_id": "Y",
+                "component": "Z",
+                "severity": "LOW",
+                "summary": "test",
+                "fixed_version": None,
+            }
+        ]
         send_slack_notification(notifications)
         mock_post.assert_not_called()
 
@@ -230,9 +239,24 @@ class TestSendSlackNotification:
     @patch("cve_watch.requests.post")
     def test_mixed_notifications(self, mock_post):
         notifications = [
-            {"type": "new_cve", "osv_id": "A", "cve_id": "CVE-1", "component": "pkg1", "severity": "HIGH", "summary": "s1", "fixed_version": "1.0"},
+            {
+                "type": "new_cve",
+                "osv_id": "A",
+                "cve_id": "CVE-1",
+                "component": "pkg1",
+                "severity": "HIGH",
+                "summary": "s1",
+                "fixed_version": "1.0",
+            },
             {"type": "fix_available", "osv_id": "B", "cve_id": "CVE-2", "component": "pkg2", "fixed_version": "2.0"},
-            {"type": "severity_changed", "osv_id": "C", "cve_id": "CVE-3", "component": "pkg3", "old_severity": "LOW", "new_severity": "CRITICAL"},
+            {
+                "type": "severity_changed",
+                "osv_id": "C",
+                "cve_id": "CVE-3",
+                "component": "pkg3",
+                "old_severity": "LOW",
+                "new_severity": "CRITICAL",
+            },
         ]
         send_slack_notification(notifications)
         mock_post.assert_called_once()

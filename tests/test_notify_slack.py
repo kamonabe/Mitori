@@ -1,6 +1,7 @@
 """notify_slack のテスト"""
+
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_USER", "test")
@@ -15,7 +16,9 @@ class TestNotifySlack:
     def test_skip_when_webhook_url_empty(self, capsys):
         # SLACK_WEBHOOK_URL を空にしてモジュールをリロード
         import importlib
+
         import normalizer
+
         importlib.reload(normalizer)
 
         events = [{"type": "technique", "action": "added", "external_id": "T1234", "name": "Test"}]
@@ -27,7 +30,9 @@ class TestNotifySlack:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
     def test_sends_notification_on_events(self):
         import importlib
+
         import normalizer
+
         importlib.reload(normalizer)
 
         events = [
@@ -53,7 +58,9 @@ class TestNotifySlack:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
     def test_no_call_when_events_empty(self):
         import importlib
+
         import normalizer
+
         importlib.reload(normalizer)
 
         with patch("normalizer.requests.post") as mock_post:
@@ -63,8 +70,10 @@ class TestNotifySlack:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
     def test_handles_request_exception_gracefully(self, capsys):
         import importlib
-        import requests
+
         import normalizer
+        import requests
+
         importlib.reload(normalizer)
 
         events = [{"type": "technique", "action": "added", "external_id": "T9999", "name": "Fail"}]

@@ -2,8 +2,8 @@
 
 import json
 import os
-import subprocess
 import re
+import subprocess
 from datetime import datetime, timezone
 
 import pymysql
@@ -194,7 +194,7 @@ def parse_image_ref(image):
         # ポート番号を含むレジストリに注意: registry:5000/repo:tag
         # 最後の : の後がタグ（ただし / を含まない）
         last_colon = image.rfind(":")
-        after_colon = image[last_colon + 1:]
+        after_colon = image[last_colon + 1 :]
         if "/" not in after_colon:
             return image[:last_colon], after_colon
     # タグなし

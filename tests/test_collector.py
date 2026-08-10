@@ -1,7 +1,8 @@
 """collector.py のロジックテスト"""
+
 import os
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
 
 # 環境変数を先にセットしてから import する
 os.environ.setdefault("DB_HOST", "localhost")
@@ -9,7 +10,7 @@ os.environ.setdefault("DB_USER", "test")
 os.environ.setdefault("DB_PASSWORD", "test")
 os.environ.setdefault("DB_NAME", "test")
 
-from collector import should_skip, has_excessive_backlog
+from collector import has_excessive_backlog, should_skip
 
 
 class TestShouldSkip:
@@ -80,24 +81,30 @@ class TestHasExcessiveBacklog:
 
     def test_excessive_when_backlog_exceeds_threshold(self):
         # last_fetch_count=100, backlog=200 → threshold=200, 200 >= 200 → True
-        conn = self._make_conn([
-            {"last_fetch_count": 100},
-            {"cnt": 200},
-        ])
+        conn = self._make_conn(
+            [
+                {"last_fetch_count": 100},
+                {"cnt": 200},
+            ]
+        )
         assert has_excessive_backlog(conn) is True
 
     def test_not_excessive_when_below_threshold(self):
         # last_fetch_count=100, backlog=150 → threshold=200, 150 < 200 → False
-        conn = self._make_conn([
-            {"last_fetch_count": 100},
-            {"cnt": 150},
-        ])
+        conn = self._make_conn(
+            [
+                {"last_fetch_count": 100},
+                {"cnt": 150},
+            ]
+        )
         assert has_excessive_backlog(conn) is False
 
     def test_exactly_at_threshold(self):
         # last_fetch_count=50, backlog=100 → threshold=100, 100 >= 100 → True
-        conn = self._make_conn([
-            {"last_fetch_count": 50},
-            {"cnt": 100},
-        ])
+        conn = self._make_conn(
+            [
+                {"last_fetch_count": 50},
+                {"cnt": 100},
+            ]
+        )
         assert has_excessive_backlog(conn) is True

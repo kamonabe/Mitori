@@ -1,4 +1,5 @@
 """共通fixture: サンプルSTIXオブジェクト等"""
+
 import sys
 from pathlib import Path
 
@@ -21,11 +22,7 @@ def sample_tactic_stix():
         "description": "The adversary is trying to get into your network.",
         "x_mitre_shortname": "initial-access",
         "external_references": [
-            {
-                "source_name": "mitre-attack",
-                "external_id": "TA0001",
-                "url": "https://attack.mitre.org/tactics/TA0001"
-            }
+            {"source_name": "mitre-attack", "external_id": "TA0001", "url": "https://attack.mitre.org/tactics/TA0001"}
         ],
         "modified": "2025-10-25T14:00:00.000Z",
         "x_mitre_deprecated": False,
@@ -43,15 +40,9 @@ def sample_technique_stix():
         "x_mitre_is_subtechnique": False,
         "x_mitre_deprecated": False,
         "revoked": False,
-        "kill_chain_phases": [
-            {"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}
-        ],
+        "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}],
         "external_references": [
-            {
-                "source_name": "mitre-attack",
-                "external_id": "T1566",
-                "url": "https://attack.mitre.org/techniques/T1566"
-            }
+            {"source_name": "mitre-attack", "external_id": "T1566", "url": "https://attack.mitre.org/techniques/T1566"}
         ],
         "modified": "2025-11-01T10:30:00.000Z",
     }
@@ -68,14 +59,12 @@ def sample_subtechnique_stix():
         "x_mitre_is_subtechnique": True,
         "x_mitre_deprecated": False,
         "revoked": False,
-        "kill_chain_phases": [
-            {"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}
-        ],
+        "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}],
         "external_references": [
             {
                 "source_name": "mitre-attack",
                 "external_id": "T1566.001",
-                "url": "https://attack.mitre.org/techniques/T1566/001"
+                "url": "https://attack.mitre.org/techniques/T1566/001",
             }
         ],
         "modified": "2025-11-02T08:00:00.000Z",

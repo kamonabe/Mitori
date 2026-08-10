@@ -79,11 +79,7 @@ def normalize_technique(obj):
         return None
     parent_ext_id = ext_id.split(".")[0] if "." in ext_id else None
     tactic_keys = sorted(
-        set(
-            kc["phase_name"]
-            for kc in obj.get("kill_chain_phases", [])
-            if kc.get("kill_chain_name") == "mitre-attack"
-        )
+        set(kc["phase_name"] for kc in obj.get("kill_chain_phases", []) if kc.get("kill_chain_name") == "mitre-attack")
     )
     return {
         "stix_id": obj["id"],
@@ -114,8 +110,14 @@ def upsert_tactic(conn, n):
                     (stix_id, tactic_key, external_id, name, description, is_deprecated, content_hash, stix_modified)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
                 (
-                    n["stix_id"], n["tactic_key"], n["external_id"], n["name"],
-                    n["description"], n["is_deprecated"], content_hash, parse_dt(n["stix_modified"]),
+                    n["stix_id"],
+                    n["tactic_key"],
+                    n["external_id"],
+                    n["name"],
+                    n["description"],
+                    n["is_deprecated"],
+                    content_hash,
+                    parse_dt(n["stix_modified"]),
                 ),
             )
             conn.commit()
@@ -131,8 +133,14 @@ def upsert_tactic(conn, n):
                 is_deprecated=%s, content_hash=%s, stix_modified=%s
             WHERE stix_id=%s""",
             (
-                n["tactic_key"], n["external_id"], n["name"], n["description"],
-                n["is_deprecated"], content_hash, parse_dt(n["stix_modified"]), n["stix_id"],
+                n["tactic_key"],
+                n["external_id"],
+                n["name"],
+                n["description"],
+                n["is_deprecated"],
+                content_hash,
+                parse_dt(n["stix_modified"]),
+                n["stix_id"],
             ),
         )
     conn.commit()
@@ -156,9 +164,16 @@ def upsert_technique(conn, n):
                      is_subtechnique, is_deprecated, is_revoked, content_hash, stix_modified)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (
-                    n["stix_id"], n["external_id"], n["parent_external_id"], n["name"],
-                    n["description"], n["is_subtechnique"], n["is_deprecated"],
-                    n["is_revoked"], content_hash, parse_dt(n["stix_modified"]),
+                    n["stix_id"],
+                    n["external_id"],
+                    n["parent_external_id"],
+                    n["name"],
+                    n["description"],
+                    n["is_subtechnique"],
+                    n["is_deprecated"],
+                    n["is_revoked"],
+                    content_hash,
+                    parse_dt(n["stix_modified"]),
                 ),
             )
             action = "added"
@@ -169,9 +184,16 @@ def upsert_technique(conn, n):
                     is_subtechnique=%s, is_deprecated=%s, is_revoked=%s, content_hash=%s, stix_modified=%s
                 WHERE stix_id=%s""",
                 (
-                    n["external_id"], n["parent_external_id"], n["name"], n["description"],
-                    n["is_subtechnique"], n["is_deprecated"], n["is_revoked"],
-                    content_hash, parse_dt(n["stix_modified"]), n["stix_id"],
+                    n["external_id"],
+                    n["parent_external_id"],
+                    n["name"],
+                    n["description"],
+                    n["is_subtechnique"],
+                    n["is_deprecated"],
+                    n["is_revoked"],
+                    content_hash,
+                    parse_dt(n["stix_modified"]),
+                    n["stix_id"],
                 ),
             )
             if not row["is_deprecated"] and n["is_deprecated"]:

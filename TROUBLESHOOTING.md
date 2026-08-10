@@ -34,6 +34,7 @@
 
 ```python
 from taxii2client.v21 import ApiRoot
+
 api_root = ApiRoot("https://attack-taxii.mitre.org/api/v21/")
 ```
 

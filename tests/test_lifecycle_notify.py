@@ -97,6 +97,7 @@ class TestSendWebhook:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": ""})
     def test_skip_when_url_empty(self, capsys):
         import importlib
+
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
@@ -109,6 +110,7 @@ class TestSendWebhook:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
     def test_sends_post_request(self):
         import importlib
+
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
@@ -126,8 +128,8 @@ class TestSendWebhook:
     def test_handles_request_exception_gracefully(self, capsys):
         import importlib
 
-        import requests as req
         import lifecycle_notify
+        import requests as req
 
         importlib.reload(lifecycle_notify)
 
@@ -140,6 +142,7 @@ class TestSendWebhook:
     @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
     def test_logs_non_200_response(self, capsys):
         import importlib
+
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
@@ -155,9 +158,19 @@ class TestSendWebhook:
 class TestMainDeduplication:
     """main() の重複除去ロジックのテスト"""
 
-    @patch.dict(os.environ, {"DB_HOST": "localhost", "DB_USER": "t", "DB_PASSWORD": "t", "DB_NAME": "t", "SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
+    @patch.dict(
+        os.environ,
+        {
+            "DB_HOST": "localhost",
+            "DB_USER": "t",
+            "DB_PASSWORD": "t",
+            "DB_NAME": "t",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/test",
+        },
+    )
     def test_deduplicates_same_slug_version(self, capsys):
         import importlib
+
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
@@ -169,9 +182,11 @@ class TestMainDeduplication:
             {"product_slug": "mariadb", "version": "11.8", "description": "DB", "eol_date": "2027-12-01"},
         ]
 
-        with patch.object(lifecycle_notify, "get_conn") as mock_conn, \
-             patch.object(lifecycle_notify, "fetch_approaching_eol", return_value=duplicate_items), \
-             patch.object(lifecycle_notify, "send_webhook") as mock_webhook:
+        with (
+            patch.object(lifecycle_notify, "get_conn") as mock_conn,
+            patch.object(lifecycle_notify, "fetch_approaching_eol", return_value=duplicate_items),
+            patch.object(lifecycle_notify, "send_webhook") as mock_webhook,
+        ):
             mock_conn.return_value = MagicMock()
 
             lifecycle_notify.main()
@@ -181,15 +196,21 @@ class TestMainDeduplication:
             message = mock_webhook.call_args[0][0]
             assert "2件" in message
 
-    @patch.dict(os.environ, {"DB_HOST": "localhost", "DB_USER": "t", "DB_PASSWORD": "t", "DB_NAME": "t", "SLACK_WEBHOOK_URL": ""})
+    @patch.dict(
+        os.environ,
+        {"DB_HOST": "localhost", "DB_USER": "t", "DB_PASSWORD": "t", "DB_NAME": "t", "SLACK_WEBHOOK_URL": ""},
+    )
     def test_no_notification_when_no_items(self, capsys):
         import importlib
+
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
 
-        with patch.object(lifecycle_notify, "get_conn") as mock_conn, \
-             patch.object(lifecycle_notify, "fetch_approaching_eol", return_value=[]):
+        with (
+            patch.object(lifecycle_notify, "get_conn") as mock_conn,
+            patch.object(lifecycle_notify, "fetch_approaching_eol", return_value=[]),
+        ):
             mock_conn.return_value = MagicMock()
 
             lifecycle_notify.main()
