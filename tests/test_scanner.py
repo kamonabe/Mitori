@@ -1,7 +1,7 @@
 """inventory-scan/scanner.py のロジックテスト"""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_USER", "test")

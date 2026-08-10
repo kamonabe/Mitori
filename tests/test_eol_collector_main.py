@@ -31,7 +31,13 @@ class TestPickTarget:
         cursor = MagicMock()
         conn.cursor.return_value.__enter__ = MagicMock(return_value=cursor)
         conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
-        cursor.fetchone.return_value = {"id": 1, "product_slug": "python", "display_name": "Python", "status": "active", "consecutive_failures": 0}
+        cursor.fetchone.return_value = {
+            "id": 1,
+            "product_slug": "python",
+            "display_name": "Python",
+            "status": "active",
+            "consecutive_failures": 0,
+        }
 
         result = eol_collector.pick_target(conn)
         assert result["product_slug"] == "python"
@@ -54,8 +60,7 @@ class TestFetchEol:
     @patch("eol_collector.requests.get")
     def test_success(self, mock_get):
         mock_get.return_value = MagicMock(
-            status_code=200,
-            json=MagicMock(return_value={"result": {"label": "Python", "releases": []}})
+            status_code=200, json=MagicMock(return_value={"result": {"label": "Python", "releases": []}})
         )
         result = eol_collector.fetch_eol("python")
         assert result == {"label": "Python", "releases": []}
@@ -122,10 +127,15 @@ class TestMain:
     @patch("eol_collector.fetch_eol")
     @patch("eol_collector.pick_target")
     @patch("eol_collector.get_conn")
-    def test_successful_fetch_no_change(self, mock_conn, mock_pick, mock_fetch, mock_last, mock_save, mock_mark, mock_webhook, capsys):
+    def test_successful_fetch_no_change(
+        self, mock_conn, mock_pick, mock_fetch, mock_last, mock_save, mock_mark, mock_webhook, capsys
+    ):
         mock_conn.return_value = MagicMock()
         mock_pick.return_value = {"id": 1, "product_slug": "python", "status": "active", "consecutive_failures": 0}
-        result_data = {"label": "Python", "releases": [{"label": "3.12", "eolFrom": "2028-10-01", "isMaintained": True}]}
+        result_data = {
+            "label": "Python",
+            "releases": [{"label": "3.12", "eolFrom": "2028-10-01", "isMaintained": True}],
+        }
         mock_fetch.return_value = result_data
         serialized = json.dumps(result_data, sort_keys=True, ensure_ascii=False)
         mock_last.return_value = serialized  # 同じ → 変更なし
@@ -143,10 +153,15 @@ class TestMain:
     @patch("eol_collector.fetch_eol")
     @patch("eol_collector.pick_target")
     @patch("eol_collector.get_conn")
-    def test_successful_fetch_with_change(self, mock_conn, mock_pick, mock_fetch, mock_last, mock_save, mock_mark, mock_webhook, capsys):
+    def test_successful_fetch_with_change(
+        self, mock_conn, mock_pick, mock_fetch, mock_last, mock_save, mock_mark, mock_webhook, capsys
+    ):
         mock_conn.return_value = MagicMock()
         mock_pick.return_value = {"id": 1, "product_slug": "python", "status": "active", "consecutive_failures": 0}
-        result_data = {"label": "Python", "releases": [{"label": "3.12", "eolFrom": "2028-10-01", "isMaintained": True}]}
+        result_data = {
+            "label": "Python",
+            "releases": [{"label": "3.12", "eolFrom": "2028-10-01", "isMaintained": True}],
+        }
         mock_fetch.return_value = result_data
         mock_last.return_value = '{"old": "data"}'  # 異なる → 変更あり
 

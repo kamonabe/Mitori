@@ -1,6 +1,5 @@
 """inventory-scan/scanner.py の main フローテスト"""
 
-import json
 import os
 from unittest.mock import MagicMock, patch
 
@@ -57,7 +56,9 @@ class TestMain:
     @patch("scanner.upsert_record")
     @patch("scanner.ensure_table")
     @patch("scanner.get_conn")
-    def test_k3s_version_change(self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys):
+    def test_k3s_version_change(
+        self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys
+    ):
         conn = MagicMock()
         mock_conn.return_value = conn
 
@@ -85,7 +86,9 @@ class TestMain:
     @patch("scanner.upsert_record")
     @patch("scanner.ensure_table")
     @patch("scanner.get_conn")
-    def test_helm_release_change(self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys):
+    def test_helm_release_change(
+        self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys
+    ):
         conn = MagicMock()
         mock_conn.return_value = conn
 
@@ -111,7 +114,9 @@ class TestMain:
     @patch("scanner.upsert_record")
     @patch("scanner.ensure_table")
     @patch("scanner.get_conn")
-    def test_container_image_first_time_no_notify(self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys):
+    def test_container_image_first_time_no_notify(
+        self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys
+    ):
         """コンテナイメージの初回登録は通知しない"""
         conn = MagicMock()
         mock_conn.return_value = conn
@@ -136,7 +141,9 @@ class TestMain:
     @patch("scanner.upsert_record")
     @patch("scanner.ensure_table")
     @patch("scanner.get_conn")
-    def test_container_image_version_change(self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys):
+    def test_container_image_version_change(
+        self, mock_conn, mock_ensure, mock_upsert, mock_k3s, mock_maria, mock_helm, mock_images, mock_slack, capsys
+    ):
         """コンテナイメージのバージョン変更は通知する"""
         conn = MagicMock()
         mock_conn.return_value = conn

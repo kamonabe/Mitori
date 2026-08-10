@@ -1,7 +1,7 @@
 """cve_watch.py のDB操作ロジックテスト"""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_USER", "test")

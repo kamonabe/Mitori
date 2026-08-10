@@ -1,6 +1,5 @@
 """mitre/collector.py の main フロー・save_raw テスト"""
 
-import json
 import os
 from unittest.mock import MagicMock, patch
 

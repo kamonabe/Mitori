@@ -45,7 +45,7 @@ class TestSummarize:
             "releases": [{"label": f"v{i}", "eolFrom": f"2030-0{i}-01", "isMaintained": True} for i in range(1, 8)]
         }
         output = summarize(result)
-        lines = [l for l in output.split("\n") if l.strip()]
+        lines = [line for line in output.split("\n") if line.strip()]
         assert len(lines) == 5
 
     def test_empty_releases(self):

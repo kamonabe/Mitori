@@ -113,10 +113,12 @@ class TestUpsertTechnique:
         """ハッシュ一致 → None"""
         n = self._sample_technique()
         content_hash = compute_hash({k: v for k, v in n.items() if k != "tactic_keys"})
-        conn, cursor = _make_conn([
-            {"id": 1, "content_hash": content_hash, "is_deprecated": False, "is_revoked": False},
-            {"id": 1},  # SELECT id
-        ])
+        conn, cursor = _make_conn(
+            [
+                {"id": 1, "content_hash": content_hash, "is_deprecated": False, "is_revoked": False},
+                {"id": 1},  # SELECT id
+            ]
+        )
         event = upsert_technique(conn, n)
         assert event is None
         mock_sync.assert_called_once()
@@ -125,10 +127,12 @@ class TestUpsertTechnique:
     def test_update_technique(self, mock_sync):
         """ハッシュ不一致 → UPDATE → updated"""
         n = self._sample_technique(name="Updated Phishing")
-        conn, cursor = _make_conn([
-            {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
-            {"id": 1},
-        ])
+        conn, cursor = _make_conn(
+            [
+                {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
+                {"id": 1},
+            ]
+        )
         event = upsert_technique(conn, n)
         assert event["action"] == "updated"
 
@@ -136,10 +140,12 @@ class TestUpsertTechnique:
     def test_deprecated_transition(self, mock_sync):
         """deprecated 遷移"""
         n = self._sample_technique(is_deprecated=True)
-        conn, cursor = _make_conn([
-            {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
-            {"id": 1},
-        ])
+        conn, cursor = _make_conn(
+            [
+                {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
+                {"id": 1},
+            ]
+        )
         event = upsert_technique(conn, n)
         assert event["action"] == "deprecated"
 
@@ -147,10 +153,12 @@ class TestUpsertTechnique:
     def test_revoked_transition(self, mock_sync):
         """revoked 遷移"""
         n = self._sample_technique(is_revoked=True)
-        conn, cursor = _make_conn([
-            {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
-            {"id": 1},
-        ])
+        conn, cursor = _make_conn(
+            [
+                {"id": 1, "content_hash": "old-hash", "is_deprecated": False, "is_revoked": False},
+                {"id": 1},
+            ]
+        )
         event = upsert_technique(conn, n)
         assert event["action"] == "revoked"
 

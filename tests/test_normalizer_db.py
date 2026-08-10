@@ -1,8 +1,7 @@
 """normalizer.py のDB操作・メインフローテスト"""
 
 import os
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_USER", "test")
@@ -10,10 +9,9 @@ os.environ.setdefault("DB_PASSWORD", "test")
 os.environ.setdefault("DB_NAME", "test")
 
 from normalizer import (
-    COLLECTION_KEY,
+    BACKOFF_STEP,
     MAX_BACKOFF,
     MIN_BACKOFF,
-    BACKOFF_STEP,
     cleanup_old_processed,
     fetch_unprocessed,
     mark_processed,

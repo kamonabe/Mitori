@@ -42,7 +42,16 @@ class TestMain:
     @patch("normalizer.fetch_unprocessed")
     @patch("normalizer.get_conn")
     def test_processes_tactic_and_technique(
-        self, mock_conn, mock_fetch, mock_upsert_tactic, mock_upsert_tech, mock_mark, mock_cleanup, mock_schedule, mock_notify, capsys
+        self,
+        mock_conn,
+        mock_fetch,
+        mock_upsert_tactic,
+        mock_upsert_tech,
+        mock_mark,
+        mock_cleanup,
+        mock_schedule,
+        mock_notify,
+        capsys,
     ):
         mock_conn.return_value = MagicMock()
 
@@ -70,8 +79,18 @@ class TestMain:
             {"id": 2, "raw_json": json.dumps(technique_obj)},
             {"id": 3, "raw_json": json.dumps(other_obj)},
         ]
-        mock_upsert_tactic.return_value = {"type": "tactic", "action": "added", "external_id": "TA9999", "name": "Test Tactic"}
-        mock_upsert_tech.return_value = {"type": "technique", "action": "added", "external_id": "T9999", "name": "Test Technique"}
+        mock_upsert_tactic.return_value = {
+            "type": "tactic",
+            "action": "added",
+            "external_id": "TA9999",
+            "name": "Test Tactic",
+        }
+        mock_upsert_tech.return_value = {
+            "type": "technique",
+            "action": "added",
+            "external_id": "T9999",
+            "name": "Test Technique",
+        }
 
         main()
 
