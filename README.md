@@ -29,7 +29,7 @@ For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Comp
 
 # Mitori — セキュリティ情報監視プラットフォーム
 
-最終更新: 2026-08-07
+最終更新: 2026-08-10
 
 ## 1. 概要
 
@@ -38,7 +38,7 @@ For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Comp
 
 POC環境として単一ノードで動作しています。
 
-- **リポジトリ**: `github.com/kamonabe/mitori` (予定)
+- **リポジトリ**: https://github.com/kamonabe/Mitori
 
 ## 2. Mitori Mini（Docker Compose 単品提供）
 

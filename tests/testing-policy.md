@@ -1,6 +1,6 @@
 # テスト方針
 
-最終更新: 2026-08-07
+最終更新: 2026-08-10
 
 ## 1. 基本方針
 
@@ -14,9 +14,9 @@
 
 | 対象 | 理由 |
 |---|---|
-| ConfigMap 内スクリプト（eol-watch collector） | 独立ファイルとして存在しないため import 不可。テストするならファイル分離が先 |
+| ConfigMap 内スクリプト（eol-watch collector） | ファイル分離済み(`eol-watch/collector.py`)。テスト追加可能 |
 | シェルスクリプト（mirror-check） | pytest の守備範囲外。手動実行で確認 |
-| DB に依存する統合テスト | CI/CD + docker-compose 導入後に検討 |
+| DB に依存する統合テスト | GitHub Actions CI 導入済み。docker-compose での統合テストは将来検討 |
 
 ## 3. テスト追加の判断基準
 
