@@ -1,3 +1,32 @@
+# Mitori
+
+**A security monitoring and automation platform on k3s.**
+
+Mitori watches external threat intelligence, tracks software EOL dates, detects CVEs in your cluster components, and notifies changes via Slack — all running as lightweight CronJobs.
+
+## What it does
+
+| Service | Description |
+|---|---|
+| **eol-watch** | Collects EOL info from endoflife.date, detects changes |
+| **lifecycle-notify** | Alerts when your components approach end-of-life |
+| **mirror-check** | Monitors EPEL mirror availability |
+| **inventory-scan** | Weekly scan of cluster component versions |
+| **cve-watch** | Daily CVE check via OSV API, tracks status changes |
+| **mitre-collector** | Fetches MITRE ATT&CK data from TAXII 2.1 API |
+| **mitre-normalizer** | Normalizes ATT&CK data, notifies on changes |
+
+## Tech stack
+
+k3s (single node, aarch64) · Python 3.12 · MariaDB · Helm · Prometheus + Grafana + Loki
+
+## Quick start
+
+See the detailed setup instructions below (in Japanese).
+For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Compose versions of individual services.
+
+---
+
 # Mitori — セキュリティ情報監視プラットフォーム
 
 最終更新: 2026-08-07
