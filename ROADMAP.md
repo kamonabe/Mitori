@@ -1,6 +1,6 @@
 # Mitori ロードマップ
 
-最終更新: 2026-08-07
+最終更新: 2026-08-10
 
 今後の改善案・課題を一元管理するドキュメントです。
 
@@ -39,5 +39,8 @@
 
 ## インフラ / CI
 
-- [ ] GitHub Actions: イメージビルド + ghcr.io push の自動化
+- [x] GitHub Actions: lint (ruff) + テスト (pytest) + マニフェスト検証 (kubeconform)
+- [x] GitHub Actions: Dockerfile変更時にイメージビルド + ghcr.io push の自動化
+- [x] Dependabot: pip / GitHub Actions / Docker のバージョン自動追跡
+- [x] ブランチ保護: main直push禁止、CI必須、force push禁止
 - [ ] inventory-scan の nodeSelector 除去: ghcr.io push 完了済み（対応済み）
