@@ -2,24 +2,48 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: app
 
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  # MITRE ATT&CK
+  - name: mitre-collector-script
+    files:
+      - mitre/collector.py
+  - name: mitre-normalizer-script
+    files:
+      - mitre/normalizer.py
+  # EOL Watch
+  - name: eol-watch-script
+    files:
+      - eol-watch/collector.py
+  - name: lifecycle-notify-script
+    files:
+      - eol-watch/lifecycle_notify.py
+  # Mirror Check
+  - name: mirror-check-script
+    files:
+      - mirror-check/check-epel-mirrors.sh
+  # Inventory Scan
+  - name: inventory-scan-script
+    files:
+      - inventory-scan/scanner.py
+  # CVE Watch
+  - name: cve-watch-script
+    files:
+      - cve-watch/cve_watch.py
+
 resources:
   # MITRE ATT&CK
-  - mitre/mitre-collector-configmap.yaml
   - mitre/mitre-collector-cronjob.yaml
-  - mitre/mitre-normalizer-configmap.yaml
   - mitre/mitre-normalizer-cronjob.yaml
   # EOL Watch
-  - eol-watch/eol-configmap.yaml
   - eol-watch/eol-watch-cronjob.yaml
-  - eol-watch/lifecycle-notify-configmap.yaml
   - eol-watch/lifecycle-notify-cronjob.yaml
   # Mirror Check
-  - mirror-check/mirror-check-configmap.yaml
   - mirror-check/mirror-check-cronjob.yaml
   # Inventory Scan
   - inventory-scan/inventory-scan-rbac.yaml
-  - inventory-scan/inventory-scan-configmap.yaml
   - inventory-scan/inventory-scan-cronjob.yaml
   # CVE Watch
-  - cve-watch/cve-watch-configmap.yaml
   - cve-watch/cve-watch-cronjob.yaml
