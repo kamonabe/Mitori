@@ -1,0 +1,54 @@
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+
+grafana:
+  service:
+    type: NodePort
+    nodePort: 30080
+  env:
+    GF_SERVER_ROOT_URL: "http://localhost/grafana"
+    GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  persistence:
+    enabled: false
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+
+# k3s ではこれらのコンポーネントが独立 Pod として動かないため
+# メトリクス収集・アラートルールを無効化する
+kubeProxy:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false

@@ -1,0 +1,192 @@
+"""eol-watch mini: endoflife.date API で EOL 情報を定期収集し、変化を Slack 通知する."""
+
+import json
+import os
+
+import pymysql
+import requests
+
+DB_HOST = os.environ["DB_HOST"]
+DB_USER = os.environ["DB_USER"]
+DB_PASSWORD = os.environ["DB_PASSWORD"]
+DB_NAME = os.environ["DB_NAME"]
+SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
+
+ENDOFLIFE_BASE = "https://endoflife.date/api/v1/products"
+KEEP_GENERATIONS = 3
+FAIL_THRESHOLD_NEW = 3
+FAIL_THRESHOLD_EXISTING = 5
+
+
+def get_conn():
+    return pymysql.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        charset="utf8mb4",
+        autocommit=False,
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+
+
+def pick_target(conn):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, product_slug, display_name, status, consecutive_failures
+            FROM monitor_targets
+            WHERE status IN ('pending_validation','active','error')
+              AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL 30 SECOND)
+            ORDER BY (status = 'pending_validation') DESC,
+                     (last_checked_at IS NULL) DESC,
+                     last_checked_at ASC
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+            """
+        )
+        row = cur.fetchone()
+        if row:
+            cur.execute("UPDATE monitor_targets SET last_checked_at = NOW() WHERE id=%s", (row["id"],))
+    conn.commit()
+    return row
+
+
+def fetch_eol(slug):
+    try:
+        r = requests.get(f"{ENDOFLIFE_BASE}/{slug}", timeout=10)
+    except requests.RequestException as e:
+        print(f"request error: {e}")
+        return None
+    if r.status_code != 200:
+        print(f"unexpected status {r.status_code} for {slug}")
+        return None
+    data = r.json()
+    return data.get("result")
+
+
+def get_last_snapshot(conn, target_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT raw_json FROM eol_snapshots WHERE target_id=%s ORDER BY collected_at DESC LIMIT 1",
+            (target_id,),
+        )
+        row = cur.fetchone()
+        return row["raw_json"] if row else None
+
+
+def save_snapshot(conn, target_id, serialized):
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO eol_snapshots (target_id, raw_json, collected_at) VALUES (%s, %s, NOW())",
+            (target_id, serialized),
+        )
+        cur.execute(
+            """
+            DELETE FROM eol_snapshots
+            WHERE target_id=%s
+              AND id NOT IN (
+                SELECT id FROM (
+                  SELECT id FROM eol_snapshots
+                  WHERE target_id=%s
+                  ORDER BY collected_at DESC
+                  LIMIT %s
+                ) AS keep
+              )
+            """,
+            (target_id, target_id, KEEP_GENERATIONS),
+        )
+    conn.commit()
+
+
+def mark_success(conn, target_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE monitor_targets SET status='active', consecutive_failures=0 WHERE id=%s",
+            (target_id,),
+        )
+    conn.commit()
+
+
+def mark_failure(conn, target):
+    new_failures = target["consecutive_failures"] + 1
+    new_status = target["status"]
+    alert = None
+
+    if target["status"] == "pending_validation" and new_failures >= FAIL_THRESHOLD_NEW:
+        new_status = "invalid"
+        alert = f":x: `{target['product_slug']}` は endoflife.date で見つかりませんでした。監視対象から除外します。"
+    elif target["status"] in ("active", "error") and new_failures >= FAIL_THRESHOLD_EXISTING:
+        new_status = "error"
+        alert = f":warning: `{target['product_slug']}` の取得が{new_failures}回連続で失敗しています。"
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE monitor_targets SET status=%s, consecutive_failures=%s WHERE id=%s",
+            (new_status, new_failures, target["id"]),
+        )
+    conn.commit()
+
+    if alert:
+        send_webhook(alert)
+
+
+def send_webhook(text):
+    if not SLACK_WEBHOOK_URL:
+        print(f"[通知スキップ] {text}")
+        return
+    try:
+        requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
+    except requests.RequestException as e:
+        print(f"webhook post failed: {e}")
+
+
+def summarize(result):
+    lines = []
+    for rel in result.get("releases", [])[:5]:
+        lines.append(f"  - {rel.get('label')}: EOL {rel.get('eolFrom')} (maintained: {rel.get('isMaintained')})")
+    return "\n".join(lines)
+
+
+def main():
+    try:
+        conn = get_conn()
+    except pymysql.Error as e:
+        print(f"エラー: DB接続失敗: {e}")
+        return
+    except Exception as e:
+        print(f"エラー: DB接続中に予期しないエラー: {e}")
+        return
+
+    target = pick_target(conn)
+    if not target:
+        print("No target available to check right now.")
+        return
+
+    print(f"Checking {target['product_slug']} (status={target['status']})")
+    result = fetch_eol(target["product_slug"])
+
+    if result is None:
+        print("Fetch failed.")
+        mark_failure(conn, target)
+        return
+
+    serialized = json.dumps(result, sort_keys=True, ensure_ascii=False)
+    prev = get_last_snapshot(conn, target["id"])
+    is_first_time = prev is None
+    changed = (not is_first_time) and (prev != serialized)
+
+    save_snapshot(conn, target["id"], serialized)
+    mark_success(conn, target["id"])
+
+    label = result.get("label", target["product_slug"])
+    send_webhook(f":mag: EOL定期チェック: *{label}*\n{summarize(result)}")
+
+    if changed:
+        send_webhook(f":bell: *{label}* のEOL情報に変更を検知しました。")
+
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()

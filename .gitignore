@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+tests/.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Mitori Mini 実環境変数
+mini/**/.env
+
+# IDE / ツール
+.kiro/
+.DS_Store
+*.swp
+*.swo
+
+# DBダンプ・バックアップ（将来の事故防止）
+*.sql.gz
+*.dump
+*.bak
+
+# Kubernetes Secret YAML（万が一作成しても追跡しない）
+*-secret.yaml
+*-secret.yml
+
+# 環境固有
+.env
+.env.*
+!.env.example

@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: galera-slack-notifications
+  namespace: monitoring
+spec:
+  receivers:
+  - name: slack-notifications
+    slackConfigs:
+    - apiURL:
+        key: webhook-url
+        name: slack-webhook
+      sendResolved: true
+      title: '{{ .CommonAnnotations.summary }}'
+      text: '{{ .CommonAnnotations.description }}'
+  route:
+    groupBy:
+    - alertname
+    - namespace
+    groupInterval: 5m
+    groupWait: 30s
+    receiver: slack-notifications
+    repeatInterval: 4h

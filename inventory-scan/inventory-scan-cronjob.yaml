@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: inventory-scan
+  namespace: app
+spec:
+  schedule: "0 4 * * 0"  # 毎週日曜 04:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600
+      completions: 1
+      parallelism: 1
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: inventory-scan
+          imagePullSecrets:
+          - name: ghcr-secret
+          containers:
+          - name: scanner
+            image: ghcr.io/kamonabe/inventory-scan:1.0.0
+            imagePullPolicy: IfNotPresent
+            command:
+              - python
+              - /app/scanner.py
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-scan-db
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-scan-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-scan-db
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-scan-db
+                  key: database
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-scan-slack
+                  key: webhook-url
+                  optional: true
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+            volumeMounts:
+            - name: script
+              mountPath: /app
+          volumes:
+          - name: script
+            configMap:
+              name: inventory-scan-script
+          restartPolicy: Never

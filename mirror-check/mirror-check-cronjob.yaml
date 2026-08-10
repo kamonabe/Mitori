@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mirror-check
+  namespace: app
+spec:
+  schedule: "0 9 * * *"      # 毎日09:00 UTC に実行
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 0          # リトライ不要（NG検知が目的なので再実行しない）
+      template:
+        spec:
+          containers:
+          - name: mirror-check
+            image: alpine/curl:8.19.0
+            imagePullPolicy: IfNotPresent
+            command:
+              - sh
+              - /scripts/check-epel-mirrors.sh
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            env:
+            - name: REPO
+              value: "epel-10"
+            - name: ARCH
+              value: "aarch64"
+            # 監視対象ミラー（変更する場合はここを更新）
+            - name: MIRROR_1
+              value: "http://ftp.yz.yamagata-u.ac.jp/pub/linux/fedora-projects/epel/10.3/Everything/aarch64/"
+            - name: MIRROR_2
+              value: "http://ftp.iij.ad.jp/pub/linux/Fedora/epel/10.3/Everything/aarch64/"
+            - name: MIRROR_3
+              value: "https://ftp.kaist.ac.kr/pub/epel/10.3/Everything/aarch64/"
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mirror-check-slack
+                  key: webhook-url
+            volumeMounts:
+            - name: script
+              mountPath: /scripts
+          volumes:
+          - name: script
+            configMap:
+              name: mirror-check-script
+              defaultMode: 0755
+          restartPolicy: Never

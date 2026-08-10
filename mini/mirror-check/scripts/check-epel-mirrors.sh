@@ -1,0 +1,73 @@
+#!/usr/bin/env sh
+# check-epel-mirrors.sh
+# EPELミラーリストに設定済みミラーが含まれているか確認し、
+# 欠落数に応じてアラートレベルを出力する
+
+REPO="${REPO:-epel-10}"
+ARCH="${ARCH:-aarch64}"
+MIRRORLIST_URL="https://mirrors.fedoraproject.org/mirrorlist?repo=${REPO}&arch=${ARCH}"
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
+
+# mirrorlistを取得（コメント行・空行を除外）
+MIRROR_LIST=$(curl -sf --max-time 10 "${MIRRORLIST_URL}" | grep -v '^#' | grep -v '^$')
+if [ -z "${MIRROR_LIST}" ]; then
+  log "[ERROR] mirrorlistの取得に失敗しました: ${MIRRORLIST_URL}"
+  exit 3
+fi
+
+MISSING=0
+
+log "=== EPEL Mirror Check ==="
+log "Repo  : ${REPO}"
+log "Arch  : ${ARCH}"
+log "URL   : ${MIRRORLIST_URL}"
+log "-------------------------------"
+
+MISSING_LIST=""
+for mirror in "${MIRROR_1}" "${MIRROR_2}" "${MIRROR_3}"; do
+  [ -z "${mirror}" ] && continue
+  normalized="${mirror%/}"
+  if echo "${MIRROR_LIST}" | sed 's|/$||' | grep -qF "${normalized}"; then
+    log "[OK]  ${mirror}"
+  else
+    log "[NG]  ${mirror}"
+    MISSING=$((MISSING + 1))
+    MISSING_LIST="${MISSING_LIST}• ${mirror}\n"
+  fi
+done
+
+log "-------------------------------"
+
+send_slack() {
+  [ -z "${SLACK_WEBHOOK_URL}" ] && return
+  PAYLOAD="{\"text\": \"$1\"}"
+  curl -sf -X POST -H 'Content-type: application/json' \
+    --data "${PAYLOAD}" "${SLACK_WEBHOOK_URL}" > /dev/null \
+    || log "[WARN] Slack通知に失敗しました"
+}
+
+case ${MISSING} in
+  0)
+    log "[NORMAL]   全ミラーがリストに存在します。異常なし。"
+    exit 0
+    ;;
+  1)
+    MSG=":warning: *[EPEL Mirror WARN]* 1件のミラーがリストから消えています。\n次回棚卸し時に確認してください。\n\n${MISSING_LIST}"
+    log "[WARN]     1件のミラーがリストから消えています。"
+    send_slack "${MSG}"
+    exit 1
+    ;;
+  2)
+    MSG=":rotating_light: *[EPEL Mirror ALERT]* 2件のミラーがリストから消えています。\n早めにミラーを差し替えてください。\n\n${MISSING_LIST}"
+    log "[ALERT]    2件のミラーがリストから消えています。"
+    send_slack "${MSG}"
+    exit 2
+    ;;
+  *)
+    MSG=":sos: *[EPEL Mirror CRITICAL]* 全ミラーがリストから消えています。\nインストール不能の可能性があります。\n\n${MISSING_LIST}"
+    log "[CRITICAL] 全ミラーがリストから消えています。"
+    send_slack "${MSG}"
+    exit 3
+    ;;
+esac

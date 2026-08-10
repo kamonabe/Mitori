@@ -1,0 +1,26 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["mitre", "eol-watch", "inventory-scan"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (formatterに任せる)
+    "UP017",  # datetime.UTC alias — 規約で timezone.utc を使う方針のため無視
+    "B007",   # unused loop variable — 構造化代入で意図的に使う場面があるため
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

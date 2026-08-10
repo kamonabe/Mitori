@@ -1,0 +1,13 @@
+services:
+  mirror-check:
+    image: alpine/curl:8.19.0
+    environment:
+      REPO: ${REPO:-epel-10}
+      ARCH: ${ARCH:-aarch64}
+      MIRROR_1: ${MIRROR_1:-}
+      MIRROR_2: ${MIRROR_2:-}
+      MIRROR_3: ${MIRROR_3:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["sh", "/scripts/check-epel-mirrors.sh"]

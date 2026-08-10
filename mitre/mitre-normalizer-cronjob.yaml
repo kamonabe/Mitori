@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mitre-normalizer
+  namespace: app
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 1
+      template:
+        spec:
+          imagePullSecrets:
+          - name: ghcr-secret
+          containers:
+          - name: normalizer
+            image: ghcr.io/kamonabe/mitre-python:1.0.0
+            imagePullPolicy: IfNotPresent
+            command:
+              - python
+              - /app/normalizer.py
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: mitre-attack-db
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mitre-attack-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mitre-attack-db
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mitre-attack-db
+                  key: database
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mitre-attack-slack
+                  key: webhook-url
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                cpu: 200m
+                memory: 512Mi
+            volumeMounts:
+            - name: script
+              mountPath: /app
+          volumes:
+          - name: script
+            configMap:
+              name: mitre-normalizer-script
+          restartPolicy: Never

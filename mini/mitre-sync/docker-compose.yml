@@ -1,0 +1,48 @@
+services:
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MARIADB_DATABASE: ${DB_NAME:-mitre_attack}
+      MARIADB_USER: ${DB_USER:-mitre}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-mitrepass}
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mitre-collector:
+    image: python:3.12-slim
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_USER: ${DB_USER:-mitre}
+      DB_PASSWORD: ${DB_PASSWORD:-mitrepass}
+      DB_NAME: ${DB_NAME:-mitre_attack}
+    volumes:
+      - ./scripts:/app:ro
+    command: ["sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/collector.py"]
+
+  mitre-normalizer:
+    image: python:3.12-slim
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_USER: ${DB_USER:-mitre}
+      DB_PASSWORD: ${DB_PASSWORD:-mitrepass}
+      DB_NAME: ${DB_NAME:-mitre_attack}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    volumes:
+      - ./scripts:/app:ro
+    command: ["sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/normalizer.py"]
+
+volumes:
+  db-data:

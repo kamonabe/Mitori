@@ -1,0 +1,6 @@
+pytest==8.*
+pytest-mock==3.*
+pymysql==1.2.0
+requests==2.34.2
+taxii2-client==2.3.0
+ruff>=0.5

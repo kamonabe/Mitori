@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app
+
+resources:
+  # MITRE ATT&CK
+  - mitre/mitre-collector-configmap.yaml
+  - mitre/mitre-collector-cronjob.yaml
+  - mitre/mitre-normalizer-configmap.yaml
+  - mitre/mitre-normalizer-cronjob.yaml
+  # EOL Watch
+  - eol-watch/eol-configmap.yaml
+  - eol-watch/eol-watch-cronjob.yaml
+  - eol-watch/lifecycle-notify-configmap.yaml
+  - eol-watch/lifecycle-notify-cronjob.yaml
+  # Mirror Check
+  - mirror-check/mirror-check-configmap.yaml
+  - mirror-check/mirror-check-cronjob.yaml
+  # Inventory Scan
+  - inventory-scan/inventory-scan-rbac.yaml
+  - inventory-scan/inventory-scan-configmap.yaml
+  - inventory-scan/inventory-scan-cronjob.yaml
+  # CVE Watch
+  - cve-watch/cve-watch-configmap.yaml
+  - cve-watch/cve-watch-cronjob.yaml

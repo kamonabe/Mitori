@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mitre-collector-script
+  namespace: app
+data:
+  collector.py: |
+    # collector.py (①)
+    import os
+    import json
+    import requests
+    from datetime import datetime, timezone
+    from taxii2client.v21 import ApiRoot
+    import pymysql
+
+    API_ROOT_URL = "https://attack-taxii.mitre.org/api/v21/"
+    COLLECTION_KEY = "enterprise-attack"
+    COLLECTION_ID = "x-mitre-collection--1f5f1533-f617-4ca8-9ab4-6a02367fa019"
+    ACCEPT_HEADER = "application/taxii+json;version=2.1"
+
+    DB_HOST = os.environ["DB_HOST"]
+    DB_USER = os.environ["DB_USER"]
+    DB_PASSWORD = os.environ["DB_PASSWORD"]
+    DB_NAME = os.environ["DB_NAME"]
+
+    def get_conn():
+        return pymysql.connect(
+            host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME,
+            charset="utf8mb4", autocommit=False, cursorclass=pymysql.cursors.DictCursor,
+        )
+
+    def should_skip(conn):
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT next_run_at FROM mitre_taxii_cursor WHERE collection_id=%s",
+                (COLLECTION_KEY,)
+            )
+            row = cur.fetchone()
+        if row is None or row["next_run_at"] is None:
+            return False
+        return datetime.now(timezone.utc) < row["next_run_at"].replace(tzinfo=timezone.utc)
+
+    def has_excessive_backlog(conn):
+        """②(normalizer)が正常に処理できていない場合の安全弁。
+        前回①が取得した件数の2倍以上、未処理データが溜まっていたら実行しない。
+        まだ前回件数が記録されていない(初回実行など)場合はガードしない。
+        """
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT last_fetch_count FROM mitre_taxii_cursor WHERE collection_id=%s",
+                (COLLECTION_KEY,)
+            )
+            row = cur.fetchone()
+
+        if row is None or row["last_fetch_count"] is None:
+            return False
+
+        threshold = row["last_fetch_count"] * 2
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) AS cnt FROM mitre_raw_staging WHERE source=%s AND processed_at IS NULL",
+                (COLLECTION_KEY,)
+            )
+            backlog = cur.fetchone()["cnt"]
+
+        print(f"Backlog check: unprocessed={backlog}, threshold={threshold} (last_fetch_count={row['last_fetch_count']} x2)")
+        return backlog >= threshold
+
+    def fetch_all():
+        api_root = ApiRoot(API_ROOT_URL)
+        collection = next(c for c in api_root.collections if c.id == COLLECTION_ID)
+        resp = requests.get(
+            collection.objects_url,
+            headers={"Accept": ACCEPT_HEADER},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return resp.json().get("objects", [])
+
+    def save_raw(conn, objects):
+        with conn.cursor() as cur:
+            for obj in objects:
+                cur.execute(
+                    "INSERT INTO mitre_raw_staging (source, raw_json) VALUES (%s, %s)",
+                    (COLLECTION_KEY, json.dumps(obj, ensure_ascii=False))
+                )
+            # 今回の取得件数を記録しておく(次回実行時のバックログ閾値計算に使う)
+            cur.execute(
+                """
+                INSERT INTO mitre_taxii_cursor (collection_id, last_fetch_count)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE last_fetch_count=%s
+                """,
+                (COLLECTION_KEY, len(objects), len(objects))
+            )
+        conn.commit()
+
+    def main():
+        """メイン処理。DB接続失敗やエラーは gracefully 終了。"""
+        conn = None
+        try:
+            conn = get_conn()
+        except pymysql.Error as e:
+            print(f"エラー: DB接続失敗: {e}")
+            return
+        except Exception as e:
+            print(f"エラー: DB接続中に予期しないエラー: {e}")
+            return
+
+        if should_skip(conn):
+            print("Skip: next_run_at not yet reached.")
+            conn.close()
+            return
+
+        if has_excessive_backlog(conn):
+            print("Skip: unprocessed backlog is excessive. Normalizer may be stuck.")
+            conn.close()
+            return
+
+        try:
+            objects = fetch_all()
+        except requests.exceptions.RequestException as e:
+            print(f"エラー: MITRE TAXII API取得失敗: {e}")
+            conn.close()
+            return
+        except Exception as e:
+            print(f"エラー: TAXII取得中に予期しないエラー: {e}")
+            conn.close()
+            return
+
+        print(f"Fetched {len(objects)} objects")
+
+        save_raw(conn, objects)
+        conn.close()
+        print("Done. (next_run_at will be updated by the normalizer)")
+
+    if __name__ == "__main__":
+        main()

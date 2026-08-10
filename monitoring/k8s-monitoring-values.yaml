@@ -1,0 +1,15 @@
+cluster:
+  name: k3s-poc
+
+destinations:
+  loki:
+    type: loki
+    url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+podLogsViaLoki:
+  enabled: true
+  collector: alloy-logs
+
+collectors:
+  alloy-logs:
+    presets: [small, filesystem-log-reader, daemonset]
