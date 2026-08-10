@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["mitre", "eol-watch", "inventory-scan"]
+pythonpath = ["mitre", "cve-watch", "inventory-scan", "eol-watch"]
 
 [tool.ruff]
 target-version = "py312"
