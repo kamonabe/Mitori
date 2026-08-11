@@ -142,7 +142,9 @@ class TestMain:
             }
         ]
         cursor.fetchall.return_value = targets
-        cursor.fetchone.return_value = None  # get_existing_cve → None (新規)
+        # fetchone: 1回目=is_first_scan_for_component(cnt>0=通常運用),
+        #           2回目=get_existing_cve(None=新規)
+        cursor.fetchone.side_effect = [{"cnt": 1}, None]
         mock_conn.return_value = conn
 
         mock_osv.return_value = [
@@ -153,6 +155,7 @@ class TestMain:
                 "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}],
                 "database_specific": {"severity": "HIGH"},
                 "affected": [{"ranges": [{"type": "SEMVER", "events": [{"introduced": "0"}, {"fixed": "2.0.0"}]}]}],
+                "published": "2026-08-01T00:00:00Z",
             }
         ]
 
@@ -181,6 +184,7 @@ class TestMain:
             }
         ]
         cursor.fetchall.return_value = targets
+        cursor.fetchone.return_value = {"cnt": 1}  # is_first_scan_for_component
         mock_conn.return_value = conn
         mock_osv.return_value = []  # 脆弱性なし
 
@@ -210,15 +214,19 @@ class TestMain:
             }
         ]
         cursor.fetchall.return_value = targets
-        # 既存レコードあり（fixed_versionがNone）
-        cursor.fetchone.return_value = {
-            "osv_id": "GHSA-1234",
-            "cve_id": "CVE-2024-1111",
-            "component": "pkg",
-            "category": "container",
-            "severity": "HIGH",
-            "fixed_version": None,
-        }
+        # fetchone: 1回目=is_first_scan_for_component(cnt>0=通常運用),
+        #           2回目=get_existing_cve(既存レコードあり)
+        cursor.fetchone.side_effect = [
+            {"cnt": 1},
+            {
+                "osv_id": "GHSA-1234",
+                "cve_id": "CVE-2024-1111",
+                "component": "pkg",
+                "category": "container",
+                "severity": "HIGH",
+                "fixed_version": None,
+            },
+        ]
         mock_conn.return_value = conn
         mock_osv.return_value = [
             {
