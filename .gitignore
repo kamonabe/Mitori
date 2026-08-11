@@ -6,6 +6,7 @@ __pycache__/
 tests/.venv/
 .ruff_cache/
 .pytest_cache/
+.coverage
 
 # Mitori Mini 実環境変数
 mini/**/.env
