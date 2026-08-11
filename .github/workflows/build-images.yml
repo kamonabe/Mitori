@@ -18,7 +18,7 @@ jobs:
       mitre: ${{ steps.filter.outputs.mitre }}
       inventory: ${{ steps.filter.outputs.inventory }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -33,7 +33,7 @@ jobs:
     if: needs.detect-changes.outputs.mitre == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-qemu-action@v4
 
@@ -59,7 +59,7 @@ jobs:
     if: needs.detect-changes.outputs.inventory == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-qemu-action@v4
 
