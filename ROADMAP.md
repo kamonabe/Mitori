@@ -40,6 +40,27 @@
 - [ ] Certificate/Secret Expiry Watcher: TLS証明書・Secretの有効期限監視
 - [ ] Dependency Update Notifier: コンテナイメージ/Helmチャート/pipの新バージョン通知
 
+## ディストロ選定支援 (distro-pulse)
+
+Linuxディストリビューション選定の判断材料を定期収集・通知するアイデア。
+「次にサーバーを立てるときにどのディストロを選ぶか」の意思決定を継続的に支援する。
+
+### 今できること（endoflife.date API）
+
+- [x] 主要ディストロのEOL情報を eol-watch の `monitor_targets` に追加して定期収集
+  - 対象: AlmaLinux, Rocky Linux, Ubuntu, Debian, Fedora 等
+  - サポート期間の変更・新バージョンリリースを検知→Slack通知
+  - CentOS的な「突然のEOL前倒し」の早期検知に寄与
+
+### 将来やりたいこと（現時点で信頼できる公開APIが存在しない）
+
+- [ ] サーバー用途Linuxディストロのシェア率・採用率の定期取得
+  - 条件: 規約的にクリーンな公開APIのみ利用（スクレイピング不可）
+  - 条件: バイアスのかかった情報源は不可（ゲーマー向け統計等）
+  - 条件: 万人が共通認識として判断できるデータであること
+  - 現状: W3Techsは有料API、DistroWatchはAPI無し、Steam Surveyはバイアスあり
+  - トリガー: 上記条件を満たす公開APIが登場した時点で再検討
+
 ## インフラ / CI
 
 - [x] GitHub Actions: lint (ruff) + テスト (pytest) + マニフェスト検証 (kubeconform)
