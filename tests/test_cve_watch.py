@@ -174,8 +174,8 @@ class TestSendSlackNotification:
     """Slack 通知メッセージ組み立てテスト"""
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_new_cve_notification(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_new_cve_notification(self, mock_send):
         notifications = [
             {
                 "type": "new_cve",
@@ -188,15 +188,15 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(notifications)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "新規CVE検知" in payload["text"]
-        assert "CVE-2024-99999" in payload["text"]
-        assert "HIGH" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "新規CVE検知" in text
+        assert "CVE-2024-99999" in text
+        assert "HIGH" in text
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_resolved_notification(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_resolved_notification(self, mock_send):
         notifications = [
             {
                 "type": "resolved",
@@ -208,13 +208,13 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(notifications)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "対処済み確認" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "対処済み確認" in text
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "")
-    @patch("cve_watch.requests.post")
-    def test_skip_when_no_webhook(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_skip_when_no_webhook(self, mock_send):
         notifications = [
             {
                 "type": "new_cve",
@@ -227,17 +227,17 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(notifications)
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_empty_notifications_skipped(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_empty_notifications_skipped(self, mock_send):
         send_slack_notification([])
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_mixed_notifications(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_mixed_notifications(self, mock_send):
         notifications = [
             {
                 "type": "new_cve",
@@ -259,8 +259,8 @@ class TestSendSlackNotification:
             },
         ]
         send_slack_notification(notifications)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "新規CVE検知" in payload["text"]
-        assert "修正版が公開されました" in payload["text"]
-        assert "深刻度変更" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "新規CVE検知" in text
+        assert "修正版が公開されました" in text
+        assert "深刻度変更" in text

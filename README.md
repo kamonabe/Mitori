@@ -65,6 +65,9 @@ k3s/
 ├── mini/                      # Docker Compose 単品提供版
 ├── kustomization.yaml         # アプリCronJob一括デプロイ用(kubectl apply -k .)
 ├── pyproject.toml             # ruff(linter/formatter) + pytest 設定
+├── common/
+│   ├── db.py                  # 共通DBコネクション(get_conn)
+│   └── slack.py               # 共通Slack通知(send_slack)
 ├── bootstrap/
 │   └── get_helm.sh            # Helmインストールスクリプト(公式スクリプト)
 ├── mariadb/
@@ -313,7 +316,7 @@ tests/.venv/bin/pip install -r tests/requirements-test.txt
 tests/.venv/bin/pytest
 ```
 
-テスト対象: `mitre/normalizer.py` / `mitre/collector.py` の純粋ロジック（ハッシュ計算、正規化、バックオフ判定、Slack通知）。
+テスト対象: 全サービスの純粋ロジック（DB操作モック、ハッシュ計算、正規化、バックオフ判定、Slack通知メッセージ組み立て）。
 
 ## 10. Lint / Format
 
@@ -321,11 +324,11 @@ tests/.venv/bin/pytest
 
 ```bash
 # チェック
-tests/.venv/bin/ruff check mitre/ eol-watch/
+tests/.venv/bin/ruff check common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
 
 # 自動修正
-tests/.venv/bin/ruff check --fix mitre/ eol-watch/
+tests/.venv/bin/ruff check --fix common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
 
 # フォーマット
-tests/.venv/bin/ruff format mitre/ eol-watch/
+tests/.venv/bin/ruff format common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
 ```

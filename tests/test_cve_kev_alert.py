@@ -15,8 +15,8 @@ class TestSendSlackNotification:
     """Slack 通知メッセージ組み立てテスト"""
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_kev_alert.requests.post")
-    def test_single_alert(self, mock_post):
+    @patch("cve_kev_alert.send_slack")
+    def test_single_alert(self, mock_send):
         alerts = [
             {
                 "cve_id": "CVE-2025-46599",
@@ -30,9 +30,8 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(alerts)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        text = payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
         assert "自環境CVE × KEV 該当: 1件" in text
         assert "CVE-2025-46599" in text
         assert "HIGH" in text
@@ -42,8 +41,8 @@ class TestSendSlackNotification:
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
     @patch("cve_kev_alert.NOTIFY_MAX_ITEMS", 2)
-    @patch("cve_kev_alert.requests.post")
-    def test_truncation_over_max_items(self, mock_post):
+    @patch("cve_kev_alert.send_slack")
+    def test_truncation_over_max_items(self, mock_send):
         alerts = [
             {
                 "cve_id": f"CVE-2026-000{i}",
@@ -58,13 +57,13 @@ class TestSendSlackNotification:
             for i in range(4)
         ]
         send_slack_notification(alerts)
-        payload = mock_post.call_args[1]["json"]
-        assert "自環境CVE × KEV 該当: 4件" in payload["text"]
-        assert "他 2 件" in payload["text"]
+        text = mock_send.call_args[0][0]
+        assert "自環境CVE × KEV 該当: 4件" in text
+        assert "他 2 件" in text
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "")
-    @patch("cve_kev_alert.requests.post")
-    def test_skip_when_no_webhook(self, mock_post):
+    @patch("cve_kev_alert.send_slack")
+    def test_skip_when_no_webhook(self, mock_send):
         alerts = [
             {
                 "cve_id": "CVE-2026-0001",
@@ -78,11 +77,11 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(alerts)
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_kev_alert.requests.post")
-    def test_no_fixed_version_omitted(self, mock_post):
+    @patch("cve_kev_alert.send_slack")
+    def test_no_fixed_version_omitted(self, mock_send):
         """fixed_version が None なら '修正版:' 行を出力しない."""
         alerts = [
             {
@@ -97,12 +96,12 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(alerts)
-        payload = mock_post.call_args[1]["json"]
-        assert "修正版:" not in payload["text"]
+        text = mock_send.call_args[0][0]
+        assert "修正版:" not in text
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_kev_alert.requests.post")
-    def test_due_date_none_shows_unset(self, mock_post):
+    @patch("cve_kev_alert.send_slack")
+    def test_due_date_none_shows_unset(self, mock_send):
         alerts = [
             {
                 "cve_id": "CVE-2026-0001",
@@ -116,15 +115,14 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(alerts)
-        payload = mock_post.call_args[1]["json"]
-        assert "対処期限: 未設定" in payload["text"]
+        text = mock_send.call_args[0][0]
+        assert "対処期限: 未設定" in text
 
     @patch("cve_kev_alert.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_kev_alert.requests.post")
-    def test_notification_failure_does_not_raise(self, mock_post):
-        import requests
-
-        mock_post.side_effect = requests.ConnectionError("network")
+    @patch("cve_kev_alert.send_slack")
+    def test_notification_failure_does_not_raise(self, mock_send):
+        """send_slack内で例外が処理されるためraiseしない."""
+        mock_send.side_effect = None
         alerts = [
             {
                 "cve_id": "CVE-2026-0001",

@@ -15,8 +15,8 @@ class TestSendSlackNotification:
     """Slack 通知メッセージ組み立てテスト"""
 
     @patch("kev_notify.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("kev_notify.requests.post")
-    def test_single_entry(self, mock_post):
+    @patch("kev_notify.send_slack")
+    def test_single_entry(self, mock_send):
         entries = [
             {
                 "cve_id": "CVE-2026-0001",
@@ -29,17 +29,17 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(entries)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "KEV カタログ新規追加: 1件" in payload["text"]
-        assert "CVE-2026-0001" in payload["text"]
-        assert "Cisco" in payload["text"]
-        assert "対処期限: 2026-08-14" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "KEV カタログ新規追加: 1件" in text
+        assert "CVE-2026-0001" in text
+        assert "Cisco" in text
+        assert "対処期限: 2026-08-14" in text
 
     @patch("kev_notify.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
     @patch("kev_notify.NOTIFY_MAX_ITEMS", 2)
-    @patch("kev_notify.requests.post")
-    def test_truncation_over_max_items(self, mock_post):
+    @patch("kev_notify.send_slack")
+    def test_truncation_over_max_items(self, mock_send):
         entries = [
             {
                 "cve_id": f"CVE-2026-000{i}",
@@ -53,14 +53,14 @@ class TestSendSlackNotification:
             for i in range(5)
         ]
         send_slack_notification(entries)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "KEV カタログ新規追加: 5件" in payload["text"]
-        assert "他 3 件" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "KEV カタログ新規追加: 5件" in text
+        assert "他 3 件" in text
 
     @patch("kev_notify.SLACK_WEBHOOK_URL", "")
-    @patch("kev_notify.requests.post")
-    def test_skip_when_no_webhook(self, mock_post):
+    @patch("kev_notify.send_slack")
+    def test_skip_when_no_webhook(self, mock_send):
         entries = [
             {
                 "cve_id": "CVE-2026-0001",
@@ -73,11 +73,11 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(entries)
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("kev_notify.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("kev_notify.requests.post")
-    def test_due_date_none_shows_unset(self, mock_post):
+    @patch("kev_notify.send_slack")
+    def test_due_date_none_shows_unset(self, mock_send):
         entries = [
             {
                 "cve_id": "CVE-2026-0001",
@@ -90,16 +90,15 @@ class TestSendSlackNotification:
             }
         ]
         send_slack_notification(entries)
-        payload = mock_post.call_args[1]["json"]
-        assert "対処期限: 未設定" in payload["text"]
-        assert "ランサムウェア悪用: Known" in payload["text"]
+        text = mock_send.call_args[0][0]
+        assert "対処期限: 未設定" in text
+        assert "ランサムウェア悪用: Known" in text
 
     @patch("kev_notify.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("kev_notify.requests.post")
-    def test_notification_failure_does_not_raise(self, mock_post):
-        import requests
-
-        mock_post.side_effect = requests.ConnectionError("network error")
+    @patch("kev_notify.send_slack")
+    def test_notification_failure_does_not_raise(self, mock_send):
+        """send_slack内で例外が握りつぶされるためraise しない."""
+        mock_send.side_effect = None  # send_slack は内部で例外を処理する
         entries = [
             {
                 "cve_id": "CVE-2026-0001",

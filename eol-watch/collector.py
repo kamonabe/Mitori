@@ -1,33 +1,19 @@
 """eol-watch collector: endoflife.date APIからEOL情報を定期収集し、変更を検知する."""
 
 import json
-import os
+import sys
+
+sys.path.insert(0, "/common")
 
 import pymysql
 import requests
-
-DB_HOST = os.environ["DB_HOST"]
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_NAME = os.environ["DB_NAME"]
-SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
+from db import get_conn
+from slack import send_slack
 
 ENDOFLIFE_BASE = "https://endoflife.date/api/v1/products"
 KEEP_GENERATIONS = 3
 FAIL_THRESHOLD_NEW = 3
 FAIL_THRESHOLD_EXISTING = 5
-
-
-def get_conn():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
 
 
 def pick_target(conn):
@@ -132,13 +118,7 @@ def mark_failure(conn, target):
 
 
 def send_webhook(text):
-    if not SLACK_WEBHOOK_URL:
-        print("SLACK_WEBHOOK_URL未設定: 通知スキップ")
-        return
-    try:
-        requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
-    except requests.RequestException as e:
-        print(f"webhook post failed: {e}")
+    send_slack(text)
 
 
 def summarize(result):

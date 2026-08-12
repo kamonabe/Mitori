@@ -1,34 +1,20 @@
 """kev-notify: KEV カタログの新規追加を検知して Slack 通知する."""
 
 import os
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import datetime, timezone
 
 import pymysql
-import requests
+from db import get_conn
+from slack import send_slack
 
-DB_HOST = os.environ.get("DB_HOST", "")
-DB_USER = os.environ.get("DB_USER", "")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
-DB_NAME = os.environ.get("DB_NAME", "")
 SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
 
 NOTIFY_MAX_ITEMS = int(os.environ.get("NOTIFY_MAX_ITEMS", "5"))
 KEV_BULK_THRESHOLD = int(os.environ.get("KEV_BULK_THRESHOLD", "50"))
-
-
-def get_conn():
-    """MariaDB接続を取得する."""
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=10,
-        read_timeout=10,
-    )
 
 
 def ensure_tables(conn):
@@ -113,11 +99,8 @@ def send_slack_notification(entries):
 
     text = "\n".join(lines)
 
-    try:
-        requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
-        print("Slack通知送信完了")
-    except requests.RequestException as e:
-        print(f"エラー: Slack通知失敗: {e}")
+    send_slack(text)
+    print("Slack通知送信完了")
 
 
 def main():

@@ -131,8 +131,8 @@ class TestBulkInitialScanNotification:
     """初回スキャン時のサマリ通知テスト"""
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_bulk_scan_notification_format(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_bulk_scan_notification_format(self, mock_send):
         """初回スキャンのサマリ通知が正しいフォーマットで送信される"""
         notifications = [
             {
@@ -143,16 +143,16 @@ class TestBulkInitialScanNotification:
             }
         ]
         send_slack_notification(notifications)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "初回スキャン完了" in payload["text"]
-        assert "15件のCVEを記録" in payload["text"]
-        assert "HIGH:3" in payload["text"]
-        assert "次回以降は差分のみ" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "初回スキャン完了" in text
+        assert "15件のCVEを記録" in text
+        assert "HIGH:3" in text
+        assert "次回以降は差分のみ" in text
 
     @patch("cve_watch.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("cve_watch.requests.post")
-    def test_bulk_scan_with_new_cve_combined(self, mock_post):
+    @patch("cve_watch.send_slack")
+    def test_bulk_scan_with_new_cve_combined(self, mock_send):
         """初回スキャン通知と新規CVE通知が混在する場合"""
         notifications = [
             {
@@ -172,7 +172,7 @@ class TestBulkInitialScanNotification:
             },
         ]
         send_slack_notification(notifications)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "初回スキャン完了" in payload["text"]
-        assert "新規CVE検知" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "初回スキャン完了" in text
+        assert "新規CVE検知" in text

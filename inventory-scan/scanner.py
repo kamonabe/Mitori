@@ -4,34 +4,20 @@ import json
 import os
 import re
 import subprocess
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import datetime, timezone
 
 import pymysql
-import requests
+from db import get_conn
+from slack import send_slack
 
-DB_HOST = os.environ.get("DB_HOST", "")
-DB_USER = os.environ.get("DB_USER", "")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
-DB_NAME = os.environ.get("DB_NAME", "")
 SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
 
 NOTIFY_MAX_ITEMS = 5
 CMD_TIMEOUT = 30
-
-
-def get_conn():
-    """MariaDB接続を取得する."""
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=10,
-        read_timeout=10,
-    )
 
 
 def ensure_table(conn):
@@ -226,10 +212,7 @@ def send_slack_notification(changes):
         lines.append(f"  ... 他 {count - NOTIFY_MAX_ITEMS} 件")
 
     text = "\n".join(lines)
-    try:
-        requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
-    except requests.RequestException as e:
-        print(f"エラー: Slack通知失敗: {e}")
+    send_slack(text)
 
 
 def main():

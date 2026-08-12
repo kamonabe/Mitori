@@ -75,8 +75,13 @@ spec:
             volumeMounts:
             - name: script
               mountPath: /app
+            - name: common
+              mountPath: /common
           volumes:
           - name: script
             configMap:
               name: kev-notify-script
+          - name: common
+            configMap:
+              name: common-lib
           restartPolicy: Never

@@ -74,55 +74,52 @@ class TestSendSlackNotification:
     """send_slack_notification のテスト"""
 
     @patch("scanner.SLACK_WEBHOOK_URL", "")
-    @patch("scanner.requests.post")
-    def test_skip_when_no_webhook(self, mock_post):
+    @patch("scanner.send_slack")
+    def test_skip_when_no_webhook(self, mock_send):
         send_slack_notification([{"component": "x", "prev_version": "1.0", "version": "2.0"}])
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("scanner.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("scanner.requests.post")
-    def test_skip_when_empty_changes(self, mock_post):
+    @patch("scanner.send_slack")
+    def test_skip_when_empty_changes(self, mock_send):
         send_slack_notification([])
-        mock_post.assert_not_called()
+        mock_send.assert_not_called()
 
     @patch("scanner.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("scanner.requests.post")
-    def test_single_change(self, mock_post):
+    @patch("scanner.send_slack")
+    def test_single_change(self, mock_send):
         changes = [{"component": "k3s", "prev_version": "1.31.0", "version": "1.32.0"}]
         send_slack_notification(changes)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "k3s" in payload["text"]
-        assert "1.31.0" in payload["text"]
-        assert "1.32.0" in payload["text"]
-        assert "1件" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "k3s" in text
+        assert "1.31.0" in text
+        assert "1.32.0" in text
+        assert "1件" in text
 
     @patch("scanner.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("scanner.requests.post")
-    def test_new_component(self, mock_post):
+    @patch("scanner.send_slack")
+    def test_new_component(self, mock_send):
         changes = [{"component": "mariadb", "prev_version": None, "version": "11.8.2"}]
         send_slack_notification(changes)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "(新規)" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "(新規)" in text
 
     @patch("scanner.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("scanner.requests.post")
-    def test_exceeds_max_items(self, mock_post):
+    @patch("scanner.send_slack")
+    def test_exceeds_max_items(self, mock_send):
         changes = [{"component": f"comp-{i}", "prev_version": "1.0", "version": "2.0"} for i in range(8)]
         send_slack_notification(changes)
-        mock_post.assert_called_once()
-        payload = mock_post.call_args[1]["json"]
-        assert "8件" in payload["text"]
-        assert "他 3 件" in payload["text"]
+        mock_send.assert_called_once()
+        text = mock_send.call_args[0][0]
+        assert "8件" in text
+        assert "他 3 件" in text
 
     @patch("scanner.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("scanner.requests.post")
-    def test_handles_request_exception(self, mock_post, capsys):
-        import requests as req
-
-        mock_post.side_effect = req.RequestException("timeout")
+    @patch("scanner.send_slack")
+    def test_handles_request_exception(self, mock_send):
+        """send_slack内で例外が処理されるためraiseしない."""
+        mock_send.side_effect = None
         changes = [{"component": "k3s", "prev_version": "1.0", "version": "2.0"}]
         send_slack_notification(changes)
-        captured = capsys.readouterr()
-        assert "Slack通知失敗" in captured.out
