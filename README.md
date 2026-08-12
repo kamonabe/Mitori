@@ -101,8 +101,10 @@ k3s/
 │   └── inventory-scan-design.md         # 設計ドキュメント
 ├── cve-watch/
 │   ├── cve_watch.py                     # メインスクリプト(ローカル参照用)
+│   ├── cve_coverage_report.py           # カバレッジレポートスクリプト
 │   ├── cve-watch-configmap.yaml         # スクリプト ConfigMap
 │   ├── cve-watch-cronjob.yaml           # CronJob マニフェスト
+│   ├── cve-coverage-report-cronjob.yaml # カバレッジレポート CronJob マニフェスト
 │   └── cve-watch-design.md             # 設計ドキュメント
 ├── kev/
 │   ├── kev_collector.py                 # KEV カタログ取得スクリプト
@@ -139,6 +141,7 @@ k3s/
 | mirror-check | `app` | CronJob | EPELミラーリスト死活監視・Slack通知 |
 | inventory-scan | `app` | CronJob | クラスター内コンポーネントのバージョン収集・変更通知 |
 | cve-watch | `app` | CronJob | OSV APIでCVE日次チェック・状態変化時にSlack通知 |
+| cve-coverage-report | `app` | CronJob | inventory vs CVE監視対象の差分を週次Slack通知 |
 | kev-collector | `app` | CronJob | CISA KEVカタログを日次取得・DB蓄積 |
 | kev-notify | `app` | CronJob | KEV新規追加を検知してSlack通知（情勢把握） |
 | cve-kev-alert | `app` | CronJob | cve-watch検知CVE × KEV突合・緊急Slack通知 |
