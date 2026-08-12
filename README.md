@@ -13,6 +13,9 @@ Mitori watches external threat intelligence, tracks software EOL dates, detects 
 | **mirror-check** | Monitors EPEL mirror availability |
 | **inventory-scan** | Weekly scan of cluster component versions |
 | **cve-watch** | Daily CVE check via OSV API, tracks status changes |
+| **kev-collector** | Fetches CISA KEV (Known Exploited Vulnerabilities) catalog |
+| **kev-notify** | Notifies new KEV additions for situational awareness |
+| **cve-kev-alert** | Cross-references detected CVEs with KEV for urgent action |
 | **mitre-collector** | Fetches MITRE ATT&CK data from TAXII 2.1 API |
 | **mitre-normalizer** | Normalizes ATT&CK data, notifies on changes |
 
@@ -29,7 +32,7 @@ For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Comp
 
 # Mitori — セキュリティ情報監視プラットフォーム
 
-最終更新: 2026-08-10
+最終更新: 2026-08-12
 
 ## 1. 概要
 
@@ -98,6 +101,14 @@ k3s/
 │   ├── cve-watch-configmap.yaml         # スクリプト ConfigMap
 │   ├── cve-watch-cronjob.yaml           # CronJob マニフェスト
 │   └── cve-watch-design.md             # 設計ドキュメント
+├── kev/
+│   ├── kev_collector.py                 # KEV カタログ取得スクリプト
+│   ├── kev_notify.py                    # KEV 新規追加通知スクリプト
+│   ├── cve_kev_alert.py                 # CVE × KEV 突合通知スクリプト
+│   ├── kev-collector-cronjob.yaml       # kev-collector CronJob マニフェスト
+│   ├── kev-notify-cronjob.yaml          # kev-notify CronJob マニフェスト
+│   ├── cve-kev-alert-cronjob.yaml       # cve-kev-alert CronJob マニフェスト
+│   └── kev-design.md                    # KEV 設計ドキュメント
 ├── mitre/
 │   ├── collector.py                    # MITRE ATT&CK Collector(① 取得)
 │   ├── normalizer.py                   # MITRE ATT&CK Normalizer(② 正規化 + ③ Slack通知)
@@ -125,6 +136,9 @@ k3s/
 | mirror-check | `app` | CronJob | EPELミラーリスト死活監視・Slack通知 |
 | inventory-scan | `app` | CronJob | クラスター内コンポーネントのバージョン収集・変更通知 |
 | cve-watch | `app` | CronJob | OSV APIでCVE日次チェック・状態変化時にSlack通知 |
+| kev-collector | `app` | CronJob | CISA KEVカタログを日次取得・DB蓄積 |
+| kev-notify | `app` | CronJob | KEV新規追加を検知してSlack通知（情勢把握） |
+| cve-kev-alert | `app` | CronJob | cve-watch検知CVE × KEV突合・緊急Slack通知 |
 | mitre-collector | `app` | CronJob | MITRE ATT&CK TAXII APIから全件取得 |
 | mitre-normalizer | `app` | CronJob | MITRE ATT&CKデータを正規化・Slack通知 |
 | kube-prometheus-stack | `monitoring` | Helm | Prometheus + Grafana によるメトリクス監視 |
@@ -167,8 +181,8 @@ kubectl create namespace monitoring
 | `mirror-check-slack` | `app` | `webhook-url` | EPELミラー監視Slack通知 |
 | `inventory-scan-db` | `app` | `host`, `username`, `password`, `database` | Inventory Scan DB接続 |
 | `inventory-scan-slack` | `app` | `webhook-url` | Inventory Scan Slack通知 |
-| `cve-watch-db` | `app` | `host`, `username`, `password`, `database` | CVE Watch DB接続 |
-| `cve-watch-slack` | `app` | `webhook-url` | CVE Watch Slack通知 |
+| `cve-watch-db` | `app` | `host`, `username`, `password`, `database` | CVE Watch / KEV DB接続 |
+| `cve-watch-slack` | `app` | `webhook-url` | CVE Watch / KEV Slack通知 |
 | `ghcr-secret` | `app` | (dockerconfigjson) | GHCR(ghcr.io)からのイメージPull |
 
 ### Secret 作成コマンド例
@@ -277,6 +291,7 @@ kubectl apply -k .
 - [EPELミラー監視 設計](mirror-check/mirror-check-design.md)
 - [Inventory Scan 設計](inventory-scan/inventory-scan-design.md)
 - [CVE Watch 設計](cve-watch/cve-watch-design.md)
+- [KEV 設計](kev/kev-design.md)
 - [モニタリング設計](monitoring/monitoring-design.md)
 - [DBスキーマ一覧](mariadb/schema.md)
 - [ライフサイクル管理](LIFECYCLE.md)

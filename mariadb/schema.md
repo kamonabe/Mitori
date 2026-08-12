@@ -1,6 +1,6 @@
 # データベーススキーマ一覧
 
-最終更新: 2026-08-06
+最終更新: 2026-08-12
 
 MariaDB上の全テーブルを管理するリファレンスです。
 新しいテーブルを追加・変更した場合はこのファイルを更新してください。
@@ -64,6 +64,7 @@ kubectl exec -it deploy/mariadb -n app -- \
 | DB名 | 用途 | 利用サービス |
 |---|---|---|
 | `appdb` | アプリケーション共通DB | eol-watch |
+| `inventory_scan` | インベントリ・CVE・KEV共用DB | inventory-scan, cve-watch, kev-collector, kev-notify, cve-kev-alert |
 | `mitre_attack` | MITRE ATT&CK同期専用DB | mitre-collector, mitre-normalizer |
 
 接続先: MariaDB(`bitnami/mariadb`) `app` namespace
@@ -116,6 +117,89 @@ CREATE TABLE eol_snapshots (
 |---|---|
 | `raw_json` | endoflife.date APIレスポンスの `result` フィールドをそのまま保存 |
 | `collected_at` | 取得日時 |
+
+---
+
+## inventory_scan
+
+### kev_catalog
+
+CISA KEV（Known Exploited Vulnerabilities）カタログの各エントリを格納するテーブル。kev-collectorが日次で取得・INSERT。
+
+```sql
+CREATE TABLE kev_catalog (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cve_id VARCHAR(50) NOT NULL UNIQUE,
+    vendor VARCHAR(200) NOT NULL,
+    product VARCHAR(200) NOT NULL,
+    vulnerability_name VARCHAR(500) NOT NULL,
+    short_description TEXT,
+    required_action TEXT,
+    date_added DATE NOT NULL,
+    due_date DATE,
+    known_ransomware_use VARCHAR(20) DEFAULT 'Unknown',
+    cwes VARCHAR(500) DEFAULT NULL,
+    notes TEXT,
+    created_at DATETIME NOT NULL,
+    INDEX idx_date_added (date_added),
+    INDEX idx_cve_id (cve_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+| カラム | 説明 |
+|---|---|
+| `cve_id` | CVE ID（UNIQUE制約で重複防止） |
+| `vendor` | ベンダー名 |
+| `product` | 製品名 |
+| `date_added` | KEV カタログへの追加日 |
+| `due_date` | CISA が定める対処期限 |
+| `known_ransomware_use` | ランサムウェアでの悪用: Known / Unknown |
+| `cwes` | CWE ID のカンマ区切り |
+
+---
+
+### kev_notify_log
+
+kev-notifyの通知済み管理テーブル。
+
+```sql
+CREATE TABLE kev_notify_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cve_id VARCHAR(50) NOT NULL,
+    notified_at DATETIME NOT NULL,
+    notification_type VARCHAR(30) NOT NULL DEFAULT 'new_kev',
+    INDEX idx_cve_id (cve_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+| カラム | 説明 |
+|---|---|
+| `cve_id` | 通知済みの CVE ID |
+| `notification_type` | `new_kev`（通常通知）/ `initial_load`（初回ロード時スキップ） |
+
+---
+
+### cve_kev_alert_log
+
+cve-kev-alertの通知済み管理テーブル。cve_entries × kev_catalog の突合結果を記録。
+
+```sql
+CREATE TABLE cve_kev_alert_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cve_id VARCHAR(50) NOT NULL,
+    component VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    notified_at DATETIME NOT NULL,
+    UNIQUE KEY uq_cve_component (cve_id, component, category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+| カラム | 説明 |
+|---|---|
+| `cve_id` | CVE ID |
+| `component` | cve_entries の component（inventory と同値） |
+| `category` | cve_entries の category |
+| `notified_at` | 通知日時。レコードが存在する = 通知済み |
 
 ---
 
