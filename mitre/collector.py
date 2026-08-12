@@ -1,33 +1,20 @@
 # collector.py (①)
 import json
-import os
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import datetime, timezone
 
 import pymysql
 import requests
+from db import get_conn
 from taxii2client.v21 import ApiRoot
 
 API_ROOT_URL = "https://attack-taxii.mitre.org/api/v21/"
 COLLECTION_KEY = "enterprise-attack"
 COLLECTION_ID = "x-mitre-collection--1f5f1533-f617-4ca8-9ab4-6a02367fa019"
 ACCEPT_HEADER = "application/taxii+json;version=2.1"
-
-DB_HOST = os.environ["DB_HOST"]
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_NAME = os.environ["DB_NAME"]
-
-
-def get_conn():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
 
 
 def should_skip(conn):

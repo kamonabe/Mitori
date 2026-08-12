@@ -1,33 +1,17 @@
 """kev-collector: CISA KEV カタログを取得して DB に格納する."""
 
-import os
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import datetime, timezone
 
 import pymysql
 import requests
-
-DB_HOST = os.environ.get("DB_HOST", "")
-DB_USER = os.environ.get("DB_USER", "")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
-DB_NAME = os.environ.get("DB_NAME", "")
+from db import get_conn
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 KEV_TIMEOUT = 30
-
-
-def get_conn():
-    """MariaDB接続を取得する."""
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=10,
-        read_timeout=10,
-    )
 
 
 def ensure_tables(conn):

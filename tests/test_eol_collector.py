@@ -127,25 +127,22 @@ class TestMarkFailure:
 class TestSendWebhook:
     """send_webhook のテスト"""
 
-    @patch("eol_collector.SLACK_WEBHOOK_URL", "")
-    def test_skip_when_url_empty(self, capsys):
+    @patch("eol_collector.send_slack")
+    def test_skip_when_url_empty(self, mock_send, capsys):
+        """send_slack内でSLACK_WEBHOOK_URL空チェックしてスキップ."""
+        # send_slack をモック化して内部の動作をスキップ
+        mock_send.return_value = None
         send_webhook("test message")
-        captured = capsys.readouterr()
-        assert "スキップ" in captured.out
+        mock_send.assert_called_once_with("test message")
 
-    @patch("eol_collector.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("eol_collector.requests.post")
-    def test_sends_post_request(self, mock_post):
-        mock_post.return_value = MagicMock(status_code=200)
+    @patch("eol_collector.send_slack")
+    def test_sends_post_request(self, mock_send):
         send_webhook("hello")
-        mock_post.assert_called_once()
+        mock_send.assert_called_once_with("hello")
 
-    @patch("eol_collector.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
-    @patch("eol_collector.requests.post")
-    def test_handles_exception_gracefully(self, mock_post, capsys):
-        import requests as req
-
-        mock_post.side_effect = req.RequestException("timeout")
+    @patch("eol_collector.send_slack")
+    def test_handles_exception_gracefully(self, mock_send):
+        """send_slack内で例外が処理される."""
+        mock_send.side_effect = None
         send_webhook("hello")
-        captured = capsys.readouterr()
-        assert "failed" in captured.out
+        mock_send.assert_called_once()

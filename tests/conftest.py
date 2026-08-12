@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+# common/ ライブラリを import パスに追加
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 # eol-watch ディレクトリを import パスに追加
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "eol-watch"))
 # cve-watch ディレクトリを import パスに追加

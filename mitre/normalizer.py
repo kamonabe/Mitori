@@ -2,10 +2,15 @@
 import hashlib
 import json
 import os
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import datetime, timedelta, timezone
 
 import pymysql
-import requests
+from db import get_conn
+from slack import send_slack
 
 COLLECTION_KEY = "enterprise-attack"
 MIN_BACKOFF = 10
@@ -13,23 +18,7 @@ MAX_BACKOFF = 360
 BACKOFF_STEP = 60
 NOTIFY_MAX_ITEMS = 5  # カテゴリごとに展開する最大件数
 
-DB_HOST = os.environ["DB_HOST"]
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_NAME = os.environ["DB_NAME"]
 SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
-
-
-def get_conn():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
 
 
 def fetch_unprocessed(conn):
@@ -293,16 +282,8 @@ def notify_slack(events: list):
 
     text = "\n\n".join(blocks)
 
-    try:
-        resp = requests.post(
-            SLACK_WEBHOOK_URL,
-            json={"text": text},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        print(f"Slack通知送信完了 (合計{len(events)}件の変更)")
-    except requests.RequestException as e:
-        print(f"Slack通知失敗: {e}")
+    send_slack(text)
+    print(f"Slack通知送信完了 (合計{len(events)}件の変更)")
 
 
 CLEANUP_RETENTION_DAYS = 7  # 処理済みレコードの保持日数

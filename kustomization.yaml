@@ -6,6 +6,11 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
+  # Common library
+  - name: common-lib
+    files:
+      - common/db.py
+      - common/slack.py
   # MITRE ATT&CK
   - name: mitre-collector-script
     files:

@@ -94,7 +94,7 @@ class TestBuildMessage:
 class TestSendWebhook:
     """send_webhook のテスト"""
 
-    @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": ""})
+    @patch("slack.SLACK_WEBHOOK_URL", "")
     def test_skip_when_url_empty(self, capsys):
         import importlib
 
@@ -107,25 +107,26 @@ class TestSendWebhook:
         captured = capsys.readouterr()
         assert "スキップ" in captured.out
 
-    @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
-    def test_sends_post_request(self):
+    @patch("slack.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
+    @patch("slack.requests.post")
+    def test_sends_post_request(self, mock_post):
         import importlib
 
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
 
-        with patch("lifecycle_notify.requests.post") as mock_post:
-            mock_post.return_value = MagicMock(status_code=200)
-            lifecycle_notify.send_webhook("hello")
+        mock_post.return_value = MagicMock(status_code=200)
+        lifecycle_notify.send_webhook("hello")
 
-            mock_post.assert_called_once()
-            call_kwargs = mock_post.call_args
-            assert call_kwargs.kwargs["json"] == {"text": "hello"}
-            assert call_kwargs.kwargs["timeout"] == 10
+        mock_post.assert_called_once()
+        call_kwargs = mock_post.call_args
+        assert call_kwargs.kwargs["json"] == {"text": "hello"}
+        assert call_kwargs.kwargs["timeout"] == 10
 
-    @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
-    def test_handles_request_exception_gracefully(self, capsys):
+    @patch("slack.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
+    @patch("slack.requests.post")
+    def test_handles_request_exception_gracefully(self, mock_post, capsys):
         import importlib
 
         import lifecycle_notify
@@ -133,23 +134,23 @@ class TestSendWebhook:
 
         importlib.reload(lifecycle_notify)
 
-        with patch("lifecycle_notify.requests.post", side_effect=req.RequestException("timeout")):
-            lifecycle_notify.send_webhook("hello")
+        mock_post.side_effect = req.RequestException("timeout")
+        lifecycle_notify.send_webhook("hello")
 
         captured = capsys.readouterr()
         assert "失敗" in captured.out
 
-    @patch.dict(os.environ, {"SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"})
-    def test_logs_non_200_response(self, capsys):
+    @patch("slack.SLACK_WEBHOOK_URL", "https://hooks.slack.com/test")
+    @patch("slack.requests.post")
+    def test_logs_non_200_response(self, mock_post, capsys):
         import importlib
 
         import lifecycle_notify
 
         importlib.reload(lifecycle_notify)
 
-        with patch("lifecycle_notify.requests.post") as mock_post:
-            mock_post.return_value = MagicMock(status_code=500, text="Internal Server Error")
-            lifecycle_notify.send_webhook("hello")
+        mock_post.return_value = MagicMock(status_code=500, text="Internal Server Error")
+        lifecycle_notify.send_webhook("hello")
 
         captured = capsys.readouterr()
         assert "500" in captured.out

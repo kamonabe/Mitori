@@ -5,29 +5,15 @@ eol-watchが収集したEOLデータと、my_componentsテーブルに登録し�
 通知を止めるには my_components のバージョンを更新済みのものに書き換える。
 """
 
-import os
+import sys
+
+sys.path.insert(0, "/common")
+
 from datetime import date, datetime
 
 import pymysql
-import requests
-
-DB_HOST = os.environ["DB_HOST"]
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_NAME = os.environ["DB_NAME"]
-SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
-
-
-def get_conn():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        autocommit=False,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
+from db import get_conn
+from slack import send_slack
 
 
 def fetch_approaching_eol(conn):
@@ -77,16 +63,7 @@ def build_message(items):
 
 
 def send_webhook(text):
-    """Slack通知を送信する。URL未設定や送信失敗はログ出力のみ。"""
-    if not SLACK_WEBHOOK_URL:
-        print("SLACK_WEBHOOK_URL未設定: 通知スキップ")
-        return
-    try:
-        r = requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
-        if r.status_code != 200:
-            print(f"Slack応答: {r.status_code} {r.text}")
-    except requests.RequestException as e:
-        print(f"Slack送信失敗: {e}")
+    send_slack(text)
 
 
 def main():
