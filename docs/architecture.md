@@ -119,7 +119,7 @@ flowchart LR
 
 ```mermaid
 graph LR
-    subgraph 収集系
+    subgraph collectors["収集系"]
         MITC[mitre-collector]
         KEVC[kev-collector]
         EOLW[eol-watch]
@@ -127,7 +127,7 @@ graph LR
         CVE[cve-watch]
     end
 
-    subgraph 分析・通知系
+    subgraph analyzers["分析・通知系"]
         MITN[mitre-normalizer]
         KEVN[kev-notify]
         CKA[cve-kev-alert]
