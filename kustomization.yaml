@@ -32,6 +32,16 @@ configMapGenerator:
   - name: cve-watch-script
     files:
       - cve-watch/cve_watch.py
+  # KEV
+  - name: kev-collector-script
+    files:
+      - kev/kev_collector.py
+  - name: kev-notify-script
+    files:
+      - kev/kev_notify.py
+  - name: cve-kev-alert-script
+    files:
+      - kev/cve_kev_alert.py
 
 resources:
   # MITRE ATT&CK
@@ -47,3 +57,7 @@ resources:
   - inventory-scan/inventory-scan-cronjob.yaml
   # CVE Watch
   - cve-watch/cve-watch-cronjob.yaml
+  # KEV
+  - kev/kev-collector-cronjob.yaml
+  - kev/kev-notify-cronjob.yaml
+  - kev/cve-kev-alert-cronjob.yaml
