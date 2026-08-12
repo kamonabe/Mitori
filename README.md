@@ -291,6 +291,7 @@ kubectl apply -k .
 
 ## 8. 関連ドキュメント
 
+- [アーキテクチャ図](docs/architecture.md)
 - [環境構築ガイド（ゼロからの再構築手順）](SETUP.md)
 - [MITRE ATT&CK 同期サービス設計](mitre/mitre-attack-sync-design.md)
 - [EOL Watch 設計](eol-watch/eol-watch-design.md)
