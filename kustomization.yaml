@@ -37,6 +37,9 @@ configMapGenerator:
   - name: cve-watch-script
     files:
       - cve-watch/cve_watch.py
+  - name: cve-coverage-report-script
+    files:
+      - cve-watch/cve_coverage_report.py
   # KEV
   - name: kev-collector-script
     files:
@@ -62,6 +65,7 @@ resources:
   - inventory-scan/inventory-scan-cronjob.yaml
   # CVE Watch
   - cve-watch/cve-watch-cronjob.yaml
+  - cve-watch/cve-coverage-report-cronjob.yaml
   # KEV
   - kev/kev-collector-cronjob.yaml
   - kev/kev-notify-cronjob.yaml
