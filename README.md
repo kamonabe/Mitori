@@ -16,6 +16,8 @@ Mitori watches external threat intelligence, tracks software EOL dates, detects 
 | **kev-collector** | Fetches CISA KEV (Known Exploited Vulnerabilities) catalog |
 | **kev-notify** | Notifies new KEV additions for situational awareness |
 | **cve-kev-alert** | Cross-references detected CVEs with KEV for urgent action |
+| **epss-enricher** | Enriches CVEs with EPSS exploit probability scores |
+| **cve-priority-notify** | Prioritizes CVEs using EPSS + KEV + CVSS, notifies high-priority ones |
 | **mitre-collector** | Fetches MITRE ATT&CK data from TAXII 2.1 API |
 | **mitre-normalizer** | Normalizes ATT&CK data, notifies on changes |
 
@@ -32,7 +34,7 @@ For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Comp
 
 # Mitori — セキュリティ情報監視プラットフォーム
 
-最終更新: 2026-08-12
+最終更新: 2026-08-13
 
 ## 1. 概要
 
@@ -114,6 +116,12 @@ k3s/
 │   ├── kev-notify-cronjob.yaml          # kev-notify CronJob マニフェスト
 │   ├── cve-kev-alert-cronjob.yaml       # cve-kev-alert CronJob マニフェスト
 │   └── kev-design.md                    # KEV 設計ドキュメント
+├── epss/
+│   ├── epss_enricher.py                 # EPSS スコア取得スクリプト
+│   ├── cve_priority_notify.py           # CVE 優先度判定・通知スクリプト
+│   ├── epss-enricher-cronjob.yaml       # epss-enricher CronJob マニフェスト
+│   ├── cve-priority-notify-cronjob.yaml # cve-priority-notify CronJob マニフェスト
+│   └── epss-design.md                   # EPSS 設計ドキュメント
 ├── mitre/
 │   ├── collector.py                    # MITRE ATT&CK Collector(① 取得)
 │   ├── normalizer.py                   # MITRE ATT&CK Normalizer(② 正規化 + ③ Slack通知)
@@ -145,6 +153,8 @@ k3s/
 | kev-collector | `app` | CronJob | CISA KEVカタログを日次取得・DB蓄積 |
 | kev-notify | `app` | CronJob | KEV新規追加を検知してSlack通知（情勢把握） |
 | cve-kev-alert | `app` | CronJob | cve-watch検知CVE × KEV突合・緊急Slack通知 |
+| epss-enricher | `app` | CronJob | cve_entriesのCVEにEPSSスコアを日次付加 |
+| cve-priority-notify | `app` | CronJob | EPSS+KEV+CVSSで優先度判定・高優先をSlack通知 |
 | mitre-collector | `app` | CronJob | MITRE ATT&CK TAXII APIから全件取得 |
 | mitre-normalizer | `app` | CronJob | MITRE ATT&CKデータを正規化・Slack通知 |
 | kube-prometheus-stack | `monitoring` | Helm | Prometheus + Grafana によるメトリクス監視 |
@@ -189,6 +199,8 @@ kubectl create namespace monitoring
 | `inventory-scan-slack` | `app` | `webhook-url` | Inventory Scan Slack通知 |
 | `cve-watch-db` | `app` | `host`, `username`, `password`, `database` | CVE Watch / KEV DB接続 |
 | `cve-watch-slack` | `app` | `webhook-url` | CVE Watch / KEV Slack通知 |
+| `epss-db` | `app` | `host`, `username`, `password`, `database` | EPSS Enricher / Priority Notify DB接続 |
+| `epss-slack` | `app` | `webhook-url` | CVE Priority Notify Slack通知 |
 | `ghcr-secret` | `app` | (dockerconfigjson) | GHCR(ghcr.io)からのイメージPull |
 
 ### Secret 作成コマンド例
@@ -299,6 +311,7 @@ kubectl apply -k .
 - [Inventory Scan 設計](inventory-scan/inventory-scan-design.md)
 - [CVE Watch 設計](cve-watch/cve-watch-design.md)
 - [KEV 設計](kev/kev-design.md)
+- [EPSS 設計](epss/epss-design.md)
 - [モニタリング設計](monitoring/monitoring-design.md)
 - [DBスキーマ一覧](mariadb/schema.md)
 - [ライフサイクル管理](LIFECYCLE.md)
@@ -328,11 +341,11 @@ tests/.venv/bin/pytest
 
 ```bash
 # チェック
-tests/.venv/bin/ruff check common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
+tests/.venv/bin/ruff check common/ mitre/ eol-watch/ cve-watch/ kev/ epss/ inventory-scan/
 
 # 自動修正
-tests/.venv/bin/ruff check --fix common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
+tests/.venv/bin/ruff check --fix common/ mitre/ eol-watch/ cve-watch/ kev/ epss/ inventory-scan/
 
 # フォーマット
-tests/.venv/bin/ruff format common/ mitre/ eol-watch/ cve-watch/ kev/ inventory-scan/
+tests/.venv/bin/ruff format common/ mitre/ eol-watch/ cve-watch/ kev/ epss/ inventory-scan/
 ```

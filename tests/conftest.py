@@ -11,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "eol-watch"))
 # cve-watch ディレクトリを import パスに追加
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "cve-watch"))
+# epss ディレクトリを import パスに追加
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "epss"))
 # mitre/ ディレクトリを import パスに追加（collector.py の名前衝突を避けるため最後に insert=先頭）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mitre"))
 
