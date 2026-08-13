@@ -1,6 +1,6 @@
 # テスト方針
 
-最終更新: 2026-08-10
+最終更新: 2026-08-13
 
 ## 1. 基本方針
 
@@ -53,3 +53,5 @@
 | `test_scanner.py` | `inventory-scan/scanner.py` | `extract_chart_version`、`parse_image_ref`、`send_slack_notification` |
 | `test_scanner_collect.py` | `inventory-scan/scanner.py` | `run_cmd`、`collect_*`系関数、`upsert_record`返値ロジック |
 | `test_scanner_main.py` | `inventory-scan/scanner.py` | `main()`フロー(k3s変更/helm変更/初回登録除外) |
+| `test_epss_enricher.py` | `epss/epss_enricher.py` | API呼び出し(成功/タイムアウト/空)、CVE ID取得、UPSERT、main()フロー |
+| `test_cve_priority_notify.py` | `epss/cve_priority_notify.py` | 優先度判定ロジック(全パターン+境界値)、理由文組み立て、Slack通知、main()フロー |

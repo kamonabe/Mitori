@@ -50,6 +50,13 @@ configMapGenerator:
   - name: cve-kev-alert-script
     files:
       - kev/cve_kev_alert.py
+  # EPSS
+  - name: epss-enricher-script
+    files:
+      - epss/epss_enricher.py
+  - name: cve-priority-notify-script
+    files:
+      - epss/cve_priority_notify.py
 
 resources:
   # MITRE ATT&CK
@@ -70,3 +77,6 @@ resources:
   - kev/kev-collector-cronjob.yaml
   - kev/kev-notify-cronjob.yaml
   - kev/cve-kev-alert-cronjob.yaml
+  # EPSS
+  - epss/epss-enricher-cronjob.yaml
+  - epss/cve-priority-notify-cronjob.yaml

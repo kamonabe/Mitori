@@ -1,6 +1,6 @@
 # Mitori ロードマップ
 
-最終更新: 2026-08-12
+最終更新: 2026-08-13
 
 今後の改善案・課題を一元管理するドキュメントです。
 
@@ -34,7 +34,7 @@
 ## 新規サービス
 
 - [x] KEV (Known Exploited Vulnerabilities): CISA KEVカタログ取得 + cve-watchとの突合通知
-- [ ] EPSS連携: CVE/KEVにExploit Prediction Scoring Systemスコアを付加して優先度精緻化
+- [x] EPSS連携: CVE/KEVにExploit Prediction Scoring Systemスコアを付加して優先度精緻化
 - [ ] Drift Detector: Git上マニフェスト vs 実クラスタの差分検知
 - [ ] Backup Verifier: MariaDBバックアップのリストア検証
 - [ ] Certificate/Secret Expiry Watcher: TLS証明書・Secretの有効期限監視

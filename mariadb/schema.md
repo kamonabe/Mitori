@@ -1,6 +1,6 @@
 # データベーススキーマ一覧
 
-最終更新: 2026-08-12
+最終更新: 2026-08-13
 
 MariaDB上の全テーブルを管理するリファレンスです。
 新しいテーブルを追加・変更した場合はこのファイルを更新してください。
@@ -64,7 +64,7 @@ kubectl exec -it deploy/mariadb -n app -- \
 | DB名 | 用途 | 利用サービス |
 |---|---|---|
 | `appdb` | アプリケーション共通DB | eol-watch |
-| `inventory_scan` | インベントリ・CVE・KEV共用DB | inventory-scan, cve-watch, kev-collector, kev-notify, cve-kev-alert |
+| `inventory_scan` | インベントリ・CVE・KEV・EPSS共用DB | inventory-scan, cve-watch, kev-collector, kev-notify, cve-kev-alert, epss-enricher, cve-priority-notify |
 | `mitre_attack` | MITRE ATT&CK同期専用DB | mitre-collector, mitre-normalizer |
 
 接続先: MariaDB(`bitnami/mariadb`) `app` namespace
@@ -199,6 +199,59 @@ CREATE TABLE cve_kev_alert_log (
 | `cve_id` | CVE ID |
 | `component` | cve_entries の component（inventory と同値） |
 | `category` | cve_entries の category |
+| `notified_at` | 通知日時。レコードが存在する = 通知済み |
+
+---
+
+### epss_scores
+
+EPSS（Exploit Prediction Scoring System）スコアを格納するテーブル。epss-enricherが日次で取得・更新。
+
+```sql
+CREATE TABLE epss_scores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cve_id VARCHAR(50) NOT NULL UNIQUE,
+    epss_score DECIMAL(10,9) NOT NULL,
+    percentile DECIMAL(10,9) NOT NULL,
+    score_date DATE NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_epss_score (epss_score DESC),
+    INDEX idx_cve_id (cve_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+| カラム | 説明 |
+|---|---|
+| `cve_id` | CVE ID（UNIQUE制約） |
+| `epss_score` | 今後30日間で悪用される確率（0.0〜1.0） |
+| `percentile` | 全CVE中のパーセンタイル順位（0.0〜1.0） |
+| `score_date` | FIRST APIが返したスコア算出日 |
+| `updated_at` | レコード更新日時 |
+
+---
+
+### cve_priority_notify_log
+
+cve-priority-notifyの通知済み管理テーブル。EPSS + KEV + CVSS の優先度判定結果を記録。
+
+```sql
+CREATE TABLE cve_priority_notify_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cve_id VARCHAR(50) NOT NULL,
+    component VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    priority_level VARCHAR(20) NOT NULL,
+    notified_at DATETIME NOT NULL,
+    UNIQUE KEY uq_cve_component (cve_id, component, category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+| カラム | 説明 |
+|---|---|
+| `cve_id` | CVE ID |
+| `component` | cve_entries の component |
+| `category` | cve_entries の category |
+| `priority_level` | 判定された優先度（critical / high / medium） |
 | `notified_at` | 通知日時。レコードが存在する = 通知済み |
 
 ---
