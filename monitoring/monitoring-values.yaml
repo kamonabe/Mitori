@@ -21,6 +21,12 @@ grafana:
   env:
     GF_SERVER_ROOT_URL: "http://localhost/grafana"
     GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+  grafana.ini:
+    plugins:
+      plugin_admin_enabled: false
+    analytics:
+      check_for_updates: false
+      check_for_plugin_updates: false
   resources:
     requests:
       cpu: 50m
