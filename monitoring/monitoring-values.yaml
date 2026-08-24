@@ -29,10 +29,10 @@ grafana:
       check_for_plugin_updates: false
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
+      cpu: 100m
       memory: 256Mi
+    limits:
+      memory: 768Mi
   persistence:
     enabled: false
 
