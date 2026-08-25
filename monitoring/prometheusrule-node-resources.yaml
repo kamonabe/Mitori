@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-resource-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom-stack
+spec:
+  groups:
+  - name: node.resources
+    rules:
+    - alert: HighCPU
+      annotations:
+        description: "CPU 使用率: {{ $value | printf \"%.1f\" }}%"
+        summary: "{{ $labels.instance }} - CPU が 80% 以上"
+      expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+      for: 5m
+      labels:
+        severity: warning
+    - alert: HighMemory
+      annotations:
+        description: "Memory 使用率: {{ $value | printf \"%.1f\" }}%"
+        summary: "{{ $labels.instance }} - Memory が 85% 以上"
+      expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+      for: 5m
+      labels:
+        severity: warning

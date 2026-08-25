@@ -1,23 +1,39 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: galera-slack-notifications
+  name: infra-slack-notifications
   namespace: monitoring
 spec:
   receivers:
-  - name: slack-notifications
+  - name: slack-infra
     slackConfigs:
     - apiURL:
         key: webhook-url
         name: slack-webhook
       sendResolved: true
-      title: '{{ .CommonAnnotations.summary }}'
-      text: '{{ .CommonAnnotations.description }}'
+      title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }}'
+      text: |-
+        {{ range .Alerts }}
+        *{{ .Annotations.summary }}*
+        {{ .Annotations.description }}
+        {{ end }}
+  - name: "null"
   route:
     groupBy:
     - alertname
     - namespace
     groupInterval: 5m
     groupWait: 30s
-    receiver: slack-notifications
+    receiver: slack-infra
     repeatInterval: 4h
+    routes:
+    - matchers:
+      - name: alertname
+        value: Watchdog
+        matchType: "="
+      receiver: "null"
+    - matchers:
+      - name: alertname
+        value: InfoInhibitor
+        matchType: "="
+      receiver: "null"

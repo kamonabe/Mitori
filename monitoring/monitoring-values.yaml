@@ -1,5 +1,8 @@
 alertmanager:
   enabled: true
+  alertmanagerSpec:
+    alertmanagerConfigMatcherStrategy:
+      type: None
   config:
     global:
       resolve_timeout: 5m
