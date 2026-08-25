@@ -1,6 +1,6 @@
 # モニタリング設計ドキュメント
 
-最終更新: 2026-08-07
+最終更新: 2026-08-25
 
 ## 1. 概要
 
@@ -27,10 +27,11 @@ Alertmanager は有効化しています。`monitoring` namespace のアラー�
 
 ### 3.5 Alertmanager
 
-- **通知先**: Slack Incoming Webhook（Secret `slack-webhook` in `monitoring` namespace）
-- **ルーティング**: `monitoring` namespace のアラートのみ通知。それ以外は破棄（receiver `"null"`）
+- **通知先**: Slack Incoming Webhook（Secret `slack-webhook` in `monitoring` namespace）→ `#alerts-infra` チャンネル
+- **ルーティング**: 全namespaceのアラートを通知（Watchdogのみ除外）
 - **リピート間隔**: 4時間
 - **設定方法**: `AlertmanagerConfig` CRD（`alertmanager-config.yaml`）
+- **カスタムルール**: `prometheusrule-node-resources.yaml`, `prometheusrule-cronjob.yaml`
 - **k3s対応**: `kubeProxy`, `kubeControllerManager`, `kubeScheduler` のメトリクス収集・アラートルールは無効化（k3sでは独立Podとして動かないため常時発火するため）
 
 ## 3. 各コンポーネントの設定要点
@@ -94,10 +95,67 @@ Alertmanager は有効化しています。`monitoring` namespace のアラー�
 
 > **Grafanaのパスワードについて**: `adminPassword` を明示設定していないため、チャートのデフォルト値(`prom-operator`)が使用される。現環境はUTM仮想ネットワーク内に閉じておりホストMacからのみアクセス可能なため、デフォルトパスワードによるリスクは許容している。別環境（共有ネットワークや外部公開）で稼働させる場合はSecretによるパスワード管理を再度検討すること。
 
-## 6. 今後の課題
+## 6. Alertmanager 通知設計
+
+### 6.1 設計方針
+
+- **サービス固有の通知**(EOL変更通知、KEV新規追加など)は各CronJobスクリプトから直接Slack Webhook送信
+- **インフラ・プロセス異常の通知**(Pod異常、CronJob失敗、ノード異常など)はAlertmanager経由で通知
+- 通知先はSlackチャンネル `#alerts-infra` に集約(インフラ系アラート全般)
+
+### 6.2 ルーティング設計
+
+```
+route (default receiver: "null")
+├── alertname="Watchdog" → "null" (死活用ハートビート、通知不要)
+└── それ以外 → slack-infra (全namespace対象)
+```
+
+- `groupBy: [alertname, namespace]` でグループ化
+- `groupWait: 30s` / `groupInterval: 5m` / `repeatInterval: 4h`
+- `sendResolved: true` — 解消時も通知(ステータスで判別)
+
+### 6.3 通知テンプレート
+
+```yaml
+title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }}'
+text: |-
+  {{ range .Alerts }}
+  *{{ .Annotations.summary }}*
+  {{ .Annotations.description }}
+  {{ end }}
+```
+
+- タイトル: `[FIRING:2] KubePodNotReady` のようにステータス+件数+アラート名
+- 本文: 各アラートのsummary+descriptionを列挙
+- resolved時: `[RESOLVED] KubePodNotReady` で何が解消したか判別可能
+
+### 6.4 カスタム PrometheusRule 一覧
+
+| ルール名 | 対象 | 条件 | severity | 目的 |
+|---|---|---|---|---|
+| HighCPU | 全ノード | CPU使用率 > 80%, for 5m | warning | ノードCPU逼迫検知 |
+| HighMemory | 全ノード | Memory使用率 > 85%, for 5m | warning | ノードメモリ逼迫検知 |
+| MariaDBCrashLooping | app/mariadb-* | 15分以内に3回以上再起動, for 5m | critical | DB障害検知 |
+| CronJobFailed | app namespace | `kube_job_status_failed > 0`, for 0m | warning | CronJob失敗即時検知 |
+| CronJobNotScheduled | app namespace (日次以下) | 最後の実行から48時間以上経過, for 10m | warning | CronJobが動いていない検知 |
+| CronJobWeeklyNotScheduled | app namespace (週次) | 最後の実行から8日以上経過, for 10m | warning | 週次CronJobが動いていない検知 |
+
+### 6.5 抑制ルール (inhibit_rules)
+
+- critical が発火中のアラートと同じ `namespace` + `alertname` の warning/info は抑制
+- warning が発火中なら同条件の info を抑制
+- InfoInhibitor が発火中なら同 namespace の info を抑制
+
+### 6.6 変更履歴
+
+| 日付 | 内容 |
+|---|---|
+| 2026-08-07 | 初版: galera-slack-notifications 作成 |
+| 2026-08-25 | ルーティング全namespace対応、テンプレート改善、閾値見直し、CronJob失敗検知追加 |
+
+## 7. 今後の課題
 
 - Grafana / Loki の永続化対応: 現環境では不要と判断済み(理由は5章参照)。別環境で稼働させる場合に再検討
 - Loki データソースの Grafana への自動プロビジョニング設定
 - Prometheusの保持期間延長またはRemote Write設定の検討
-- Alertmanagerの通知対象拡大（`app` namespace のアラートも通知する等）
-- HighCPU / HighMemory アラートの閾値チューニング

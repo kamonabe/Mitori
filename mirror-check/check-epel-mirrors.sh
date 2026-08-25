@@ -19,14 +19,14 @@ ARCH="${ARCH:-aarch64}"
 MIRRORLIST_URL="https://mirrors.fedoraproject.org/mirrorlist?repo=${REPO}&arch=${ARCH}"
 
 # 監視対象ミラーは環境変数 MIRROR_1〜MIRROR_N から取得
-# （CronJobマニフェスト側で定義）
+# (CronJobマニフェスト側で定義)
 
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 # ---------- 設定ここまで ----------
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
-# mirrorlistを取得（コメント行・空行を除外）
+# mirrorlistを取得(コメント行・空行を除外)
 MIRROR_LIST=$(curl -sf --max-time 10 "${MIRRORLIST_URL}" | grep -v '^#' | grep -v '^$')
 if [ -z "${MIRROR_LIST}" ]; then
   log "[ERROR] mirrorlistの取得に失敗しました: ${MIRRORLIST_URL}"
@@ -101,7 +101,7 @@ esac
 
 log "[${LEVEL}] ${MSG}"
 
-# Slack通知（WEBHOOKが設定されていて、かつ正常以外の場合）
+# Slack通知(WEBHOOKが設定されていて、かつ正常以外の場合)
 if [ -n "${SLACK_WEBHOOK_URL}" ] && [ "${EXIT_CODE}" -gt 0 ]; then
   MISSING_FORMATTED=$(echo "${MISSING_URLS}" | sed 's/^/  • /')
   PAYLOAD="{\"text\": \"*EPEL Mirror Check: ${LEVEL}*\n${MSG}\n\n欠落ミラー:\n${MISSING_FORMATTED}\"}"

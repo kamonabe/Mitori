@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cronjob-health-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom-stack
+spec:
+  groups:
+  - name: cronjob.health
+    rules:
+    - alert: CronJobFailed
+      annotations:
+        description: "CronJob {{ $labels.namespace }}/{{ $labels.job_name }} が失敗しました"
+        summary: "CronJob {{ $labels.job_name }} 失敗"
+      expr: |
+        kube_job_status_failed{namespace="app"} > 0
+      for: 0m
+      labels:
+        severity: warning
+    - alert: CronJobNotScheduled
+      annotations:
+        description: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} が48時間以上実行されていません"
+        summary: "CronJob {{ $labels.cronjob }} 長期未実行"
+      expr: |
+        time() - kube_cronjob_status_last_schedule_time{namespace="app", cronjob!~"inventory-scan|cve-coverage-report"} > 172800
+      for: 10m
+      labels:
+        severity: warning
+    - alert: CronJobWeeklyNotScheduled
+      annotations:
+        description: "週次CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} が8日以上実行されていません"
+        summary: "週次CronJob {{ $labels.cronjob }} 長期未実行"
+      expr: |
+        time() - kube_cronjob_status_last_schedule_time{namespace="app", cronjob=~"inventory-scan|cve-coverage-report"} > 691200
+      for: 10m
+      labels:
+        severity: warning

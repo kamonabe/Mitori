@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mariadb-health-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom-stack
+spec:
+  groups:
+  - name: mariadb.health
+    rules:
+    - alert: MariaDBCrashLooping
+      annotations:
+        description: "namespace={{ $labels.namespace }} pod={{ $labels.pod }} で15分以内に3回以上再起動が発生しています"
+        summary: "MariaDB Pod {{ $labels.pod }} がクラッシュループしています"
+      expr: |
+        increase(kube_pod_container_status_restarts_total{namespace="app", pod=~"mariadb.*"}[15m]) > 3
+      for: 5m
+      labels:
+        severity: critical
