@@ -295,6 +295,10 @@ kubectl apply -k .
 
 > 個別に適用したい場合は従来通り `kubectl apply -f <ファイル>` でもOK。
 
+### 一括自動化（任意）
+
+上記の namespace 作成・Helm リポジトリ登録・Secret 作成・Helm デプロイ・アプリ適用は、[`deploy/`](deploy/README.md) の pyinfra スクリプトでまとめて実行できます（ミニマムスタート版）。新規構築時の手作業を減らしたい場合に利用してください。ホスト構築（k3s / helm install）と DB 初期化は対象外なので、従来どおり [`SETUP.md`](SETUP.md) と [`mariadb/schema.md`](mariadb/schema.md) を参照します。
+
 ## 7. アクセス
 
 | 用途 | アクセス方法 |
@@ -305,6 +309,7 @@ kubectl apply -k .
 
 - [アーキテクチャ図](docs/architecture.md)
 - [環境構築ガイド（ゼロからの再構築手順）](SETUP.md)
+- [デプロイ自動化（pyinfra・ミニマムスタート）](deploy/README.md) / [設計](deploy/deploy-design.md)
 - [MITRE ATT&CK 同期サービス設計](mitre/mitre-attack-sync-design.md)
 - [EOL Watch 設計](eol-watch/eol-watch-design.md)
 - [EPELミラー監視 設計](mirror-check/mirror-check-design.md)
