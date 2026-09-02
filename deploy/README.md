@@ -18,14 +18,20 @@
 
 デプロイ後の日常運用（スクリプト更新など）は従来どおり `kubectl apply -k .` を使ってください。pyinfra は **再構築・初期構築用** と割り切っています。
 
-今後の拡張（ホスト構築の pyinfra 化、Secret の SOPS/age 管理、DB 初期化の自動化など）は別途検討です。
+今後の拡張（ホスト構築の pyinfra 化、SSH 越し実行、Secret の SOPS/age 管理、DB 初期化の自動化など）は別途検討です。
+
+## 実行モデル（重要）
+
+**このバージョンは k3s 制御ノード上での `@local` 実行に限定します。** リポジトリを制御ノードに clone し、そのホスト自身で pyinfra を実行します。
+
+理由: スクリプトは `helm -f <repo>/...` や `kubectl apply -k <repo>` のようにリポジトリ内のファイルパスをコマンドに埋め込みます。このパスは pyinfra を起動したホスト上のパスなので、SSH 越しに別ホストを対象にするとパスが一致せず失敗します（values / kustomize ツリーが転送されないため）。詳細と将来の SSH 対応方針は [設計ドキュメント 第3章・第9章](deploy-design.md) を参照。
 
 ## 前提
 
-- 実行元ホストに Python と pyinfra が入っていること（OS は不問）
-- 対象ホストで `kubectl` / `helm` が使え、kubeconfig が有効なこと
-- SSH で対象ホストに接続できること（接続先 IP・ユーザーは `inventory.py` に記載）
-- SSH 先ユーザーは **sudo 不要**（`kubectl` / `helm` を叩くだけ）。ただし有効な kubeconfig を読める必要がある。詳細は [設計ドキュメント 第3.1章](deploy-design.md) を参照
+- k3s 制御ノード自身で実行すること（リポジトリを clone 済み）
+- そのホストに Python と pyinfra が入っていること
+- そのホストで `kubectl` / `helm` が使え、kubeconfig が有効なこと
+- 実行ユーザーは **sudo 不要**（`kubectl` / `helm` を叩くだけ）。ただし有効な kubeconfig を読める必要がある。詳細は [設計ドキュメント 第3.1章](deploy-design.md) を参照
 
 ## セットアップ
 
@@ -43,18 +49,16 @@ cp .env.example .env
 
 ## 実行
 
-```bash
-# SSH 経由でリモートのクラスタ制御ノードへ
-.venv/bin/pyinfra inventory.py deploy_cluster.py
+制御ノード上で `@local` を指定して実行します。
 
-# 制御ノード上で直接実行する場合
+```bash
 .venv/bin/pyinfra @local deploy_cluster.py
 ```
 
-`--dry-run` で実行内容を確認してから流すと安全です:
+`--dry` で実行内容を確認してから流すと安全です:
 
 ```bash
-.venv/bin/pyinfra inventory.py deploy_cluster.py --dry
+.venv/bin/pyinfra @local deploy_cluster.py --dry
 ```
 
 ## 冪等性について

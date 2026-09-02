@@ -12,22 +12,30 @@
   - DB 初期化 SQL の投入 → ../mariadb/schema.md
   - k3s クラスタ自体の作り直し
 
+実行モデル（ミニマムスタート）:
+  制御ノード上での @local 実行に限定する。REPO_ROOT（下記）は
+  pyinfra 起動ホスト上の絶対パスとして評価され、それを server.shell の
+  コマンドに埋め込む。起動ホストと実行ホストが同一（@local）でないと
+  パスが一致せず失敗するため、SSH 越し実行は非対応（deploy-design.md 第3章）。
+
 前提:
-  - 対象ホストで kubectl / helm が利用可能で、kubeconfig が有効なこと
+  - k3s 制御ノード自身で実行すること（リポジトリを clone 済み）
+  - そのホストで kubectl / helm が利用可能で、kubeconfig が有効なこと
   - deploy/.env に Secret 値が埋まっていること（.env.example 参照）
 
 実行例:
   cd deploy
-  pyinfra inventory.py deploy_cluster.py
-  # 制御ノード上で直接実行する場合:
   pyinfra @local deploy_cluster.py
+  pyinfra @local deploy_cluster.py --dry   # 事前確認
 """
 
 from pathlib import Path
 
 from pyinfra.operations import server
 
-# リポジトリルート（deploy/ の一つ上）。マニフェスト・values の参照に使う。
+# リポジトリルート（deploy/ の一つ上）。helm -f / kubectl apply -k の
+# ファイル参照に使う。これは pyinfra 起動ホスト上の絶対パスであり、
+# @local 実行（起動ホスト == 実行ホスト）を前提とする（docstring 参照）。
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 

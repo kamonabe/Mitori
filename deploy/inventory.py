@@ -1,15 +1,14 @@
-# pyinfra インベントリ（ミニマムスタート版）
+# pyinfra インベントリ（将来の SSH 実行用・現状は未使用）
 #
-# デプロイ対象ホストを定義する。
-# 実行元ホストから SSH でクラスタ制御ノードに接続する想定（実行元の OS は不問）。
-# 以下の IP / ユーザーは自環境の例。別環境ではこの値を書き換える。
+# 【重要】ミニマムスタート版は制御ノード上での @local 実行に限定しており、
+# このインベントリは使用しない（deploy-design.md 第3章）。
+#   実行方法:  pyinfra @local deploy_cluster.py
 #
-# 使い方:
-#   pyinfra inventory.py deploy_cluster.py
+# このファイルは、将来 SSH 越し実行をサポートする際の接続先定義として
+# 残してある布石。SSH 実行には values / SQL / kustomize ツリーを対象ホストへ
+# 転送する仕組み（files.put / files.rsync）が別途必要（第9章の今後の課題）。
 #
-# 接続先やユーザーは環境に合わせて書き換えること。
-# ローカル（制御ノード上で直接実行）する場合は @local を使う:
-#   pyinfra @local deploy_cluster.py
+# 以下の IP / ユーザーは自環境の例。SSH 実行を実装する際に書き換える。
 
 k3s_master = [
     (
