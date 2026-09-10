@@ -19,7 +19,7 @@ spec:
           - name: ghcr-secret
           containers:
           - name: lifecycle-notify
-            image: ghcr.io/kamonabe/mitre-python:1.0.0
+            image: ghcr.io/kamonabe/mitre-python:1.0.1
             imagePullPolicy: IfNotPresent
             command:
               - python

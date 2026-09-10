@@ -6,12 +6,16 @@ on:
     paths:
       - "mitre/Dockerfile"
       - "inventory-scan/Dockerfile"
+    tags:
+      - "v*"
 
 permissions:
   contents: read
   packages: write
 
 jobs:
+  # main への push（Dockerfile 変更時）は変更のあったイメージだけをビルドする。
+  # タグ push（リリース）は両イメージをまとめて発行したいので、このジョブの結果は無視される。
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -30,7 +34,8 @@ jobs:
 
   build-mitre-python:
     needs: detect-changes
-    if: needs.detect-changes.outputs.mitre == 'true'
+    # タグ push 時は常にビルド。main push 時は mitre/Dockerfile が変わったときだけ。
+    if: startsWith(github.ref, 'refs/tags/v') || needs.detect-changes.outputs.mitre == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -44,19 +49,30 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kamonabe/mitre-python
+          # タグ push (v1.0.1) -> 固定タグ 1.0.1 を発行。
+          # main push -> コミット SHA タグを発行（追跡用。マニフェストは参照しない）。
+          # :latest は conventions で禁止のため発行しない。
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
 
       - uses: docker/build-push-action@v7
         with:
           context: mitre
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/kamonabe/mitre-python:${{ github.sha }}
-            ghcr.io/kamonabe/mitre-python:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   build-inventory-scan:
     needs: detect-changes
-    if: needs.detect-changes.outputs.inventory == 'true'
+    if: startsWith(github.ref, 'refs/tags/v') || needs.detect-changes.outputs.inventory == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -71,11 +87,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kamonabe/inventory-scan
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha,format=long,enable=${{ github.ref == 'refs/heads/main' }}
+
       - uses: docker/build-push-action@v7
         with:
           context: inventory-scan
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/kamonabe/inventory-scan:${{ github.sha }}
-            ghcr.io/kamonabe/inventory-scan:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

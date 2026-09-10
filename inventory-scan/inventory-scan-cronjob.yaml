@@ -21,7 +21,7 @@ spec:
           - name: ghcr-secret
           containers:
           - name: scanner
-            image: ghcr.io/kamonabe/inventory-scan:1.0.0
+            image: ghcr.io/kamonabe/inventory-scan:1.0.1
             imagePullPolicy: IfNotPresent
             command:
               - python
