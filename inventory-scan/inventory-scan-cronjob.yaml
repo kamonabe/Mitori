@@ -17,8 +17,6 @@ spec:
       template:
         spec:
           serviceAccountName: inventory-scan
-          imagePullSecrets:
-          - name: ghcr-secret
           containers:
           - name: scanner
             image: ghcr.io/kamonabe/inventory-scan:1.0.1

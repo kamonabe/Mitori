@@ -15,8 +15,6 @@ spec:
       backoffLimit: 1
       template:
         spec:
-          imagePullSecrets:
-          - name: ghcr-secret
           containers:
           - name: collector
             image: ghcr.io/kamonabe/mitre-python:1.0.1
