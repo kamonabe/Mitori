@@ -10,8 +10,8 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      completions: 2
-      parallelism: 2
+      completions: 1
+      parallelism: 1
       backoffLimit: 1
       template:
         spec:
