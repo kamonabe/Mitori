@@ -52,7 +52,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/kamonabe/mitre-python
           # :latest は conventions で禁止のため自動付与を無効化する。
@@ -91,7 +91,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/kamonabe/inventory-scan
           # :latest は conventions で禁止のため自動付与を無効化する。
