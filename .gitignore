@@ -12,7 +12,9 @@ tests/.venv/
 mini/**/.env
 
 # IDE / ツール
-.kiro/
+# .kiro 配下は原則無視するが、specs（仕様）はコードと一緒にバージョン管理する
+.kiro/*
+!.kiro/specs/
 .DS_Store
 *.swp
 *.swo
