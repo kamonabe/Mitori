@@ -30,6 +30,8 @@ k3s (single node, aarch64) · Python 3.12 · MariaDB · Helm · Prometheus + Gra
 See the detailed setup instructions below (in Japanese).
 For standalone usage without k3s, check out [Mitori Mini](mini/) — Docker Compose versions of individual services.
 
+Clone `main` for the latest development version. For a specific stable release, use the [Releases](https://github.com/kamonabe/Mitori/releases) page or check out a version tag (e.g. `git checkout v1.1.0`). See [RELEASING.md](RELEASING.md) for the versioning and tagging policy.
+
 ---
 
 # Mitori — セキュリティ情報監視プラットフォーム
@@ -323,6 +325,7 @@ kubectl apply -k .
 - [トラブルシューティング記録](TROUBLESHOOTING.md)
 - [ロードマップ（今後の課題）](ROADMAP.md)
 - [セキュリティ評価・改善項目](SECURITY.md)
+- [リリース方針（バージョニング・タグ運用）](RELEASING.md)
 - [テスト方針](tests/testing-policy.md)
 
 ## 9. テスト
