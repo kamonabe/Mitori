@@ -51,6 +51,20 @@ prometheus-node-exporter:
       cpu: 20m
       memory: 32Mi
 
+# admission webhook（PrometheusRule 検証用）を完全に無効化する。
+# 証明書生成 Job (admission-create) が環境要因で失敗して tls-secret が作られず、
+# operator が `secret "...-admission" not found` で起動できなくなる問題の回避。
+# POC / プライベートクラスタでは webhook 無効が定石（Prometheus/Grafana の動作に影響なし）。
+# ★ enabled:false と patch.enabled:false だけでは不十分。operator 側が tls-secret を
+#    要求し続けるため tls.enabled:false も必須（helm-charts issue #19147 / #1438）。
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+    patch:
+      enabled: false
+  tls:
+    enabled: false
+
 # k3s ではこれらのコンポーネントが独立 Pod として動かないため
 # メトリクス収集・アラートルールを無効化する
 kubeProxy:

@@ -75,3 +75,25 @@ innodb_buffer_pool_size=256M
 ```
 
 > 注意: helm upgrade 時のキー名は `config` ではなく `mariadbConfiguration` が正しい。`config` を使うと設定が無視される。
+
+---
+
+## [Monitoring] prometheus-operator が admission webhook の tls-secret 不在で起動できない
+
+**現象**: kube-prometheus-stack をデプロイすると prometheus-operator Pod が起動せず、`secret "...-admission" not found` で待ち続ける。
+
+**原因**: PrometheusRule 検証用の admission webhook は、証明書生成 Job (`admission-create`) が tls-secret を作ることで成立する。この Job が環境要因で失敗すると secret が作られず、operator が secret を要求し続けて起動できない。
+
+**解決**: POC / プライベートクラスタでは admission webhook を無効化する（Prometheus/Grafana の動作には影響しない）。`monitoring/monitoring-values.yaml` に以下を指定する。
+
+```yaml
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+    patch:
+      enabled: false
+  tls:
+    enabled: false
+```
+
+> 注意: `admissionWebhooks.enabled: false` と `patch.enabled: false` だけでは不十分。operator 側が tls-secret を要求し続けるため `tls.enabled: false` も必須（helm-charts issue #19147 / #1438）。
