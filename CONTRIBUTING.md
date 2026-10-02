@@ -73,3 +73,7 @@ tests/.venv/bin/ruff format .
 - 各サービスに設計ドキュメント（`*-design.md`）があります
 - 実装変更時は設計ドキュメントの「最終更新日」も更新してください
 - トラブルシューティングの知見は `TROUBLESHOOTING.md` に集約してください
+
+## リリース
+
+- バージョニング（SemVer）とタグの切り方は [RELEASING.md](RELEASING.md) を参照してください
